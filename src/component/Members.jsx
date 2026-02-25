@@ -9,10 +9,10 @@ export default function MemberLists() {
     const groupName = useGroupStore((state) => state.groupName);
     const expensGroup = useGroupStore((state) => state.expensGroup);
 
-
+ 
     const [addMembers, setAddMembers] = useState([]);
     const [showAddName, setShowAddName] = useState(true);
-
+ 
     // function handleGoHome() {
     //     navigate("/");
     // }
