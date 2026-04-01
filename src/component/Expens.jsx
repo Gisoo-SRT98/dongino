@@ -1,4 +1,4 @@
-import { useState } from "react"
+import useGroupStore from "../store/useGroupStore";
 
 export default function Expenses() {
 

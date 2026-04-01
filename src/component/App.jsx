@@ -1,7 +1,7 @@
 import useGroupStore from "../store/useGroupStore";
-import   { useState } from "react";
+import { useState } from "react";
 import Footer from "./Footer";
-import  GroupsLists  from "./GroupsLists";
+import GroupsLists  from "./GroupsLists";
 import Header from "./Header";
 import Button from "./Button";
 import { Link } from "react-router-dom";
@@ -63,13 +63,13 @@ export default function App() {
       </Link>
 
       {groupName && 
-          <div className="border border-gray-200 p-4 rounded-xl m-2 text-right">
-            <h2>اسم گروه: <span className="font-bold">{groupName}</span></h2>
-            <h3>
-              هزینه: <span className="font-bold">{expensGroup.length}</span> تومان
-            </h3>
-          </div>
-        } 
+        <div className="border border-gray-200 p-4 rounded-xl m-2 text-right">
+          <h2>اسم گروه: <span className="font-bold">{groupName}</span></h2>
+          <h3>
+            هزینه: <span className="font-bold">{cost}</span> تومان
+          </h3>
+        </div>
+      } 
       
       <Footer />
     </div>

@@ -1,15 +1,10 @@
 import useGroupStore from "../store/useGroupStore";
-import { useNavigate } from "react-router-dom";
-import { useState } from "react"
-import Button from "./Button"
+import { useState } from "react";
+import Button from "./Button";
 
 export default function MemberLists() {
 
-    const navigate = useNavigate();
     const groupName = useGroupStore((state) => state.groupName);
-    const expensGroup = useGroupStore((state) => state.expensGroup);
-
- 
     const [addMembers, setAddMembers] = useState([]);
     const [showAddName, setShowAddName] = useState(true);
  
@@ -19,8 +14,7 @@ export default function MemberLists() {
     // این فانکشن که بره به کدوم صفحه و اطلاعات رو ذخیره کنه رو همزمان تو ی فانکشن میت=نویسیم
 
     function handleCreateGroup() {
-        // if (!groupName.trim()) return;
-        expensGroup();
+        if (!groupName.trim()) return;
         navigate("/");
     }
     
