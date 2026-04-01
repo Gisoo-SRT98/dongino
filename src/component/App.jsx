@@ -1,31 +1,129 @@
-import useGroupStore from "../store/useGroupStore";
 import { useEffect, useState } from "react";
-import Footer from "./Footer";
-import GroupsLists  from "./GroupsLists";
-import Header from "./Header";
 import { useNavigate } from "react-router-dom";
-import { loadGroups } from "../utils/groupsStorage";
 
+import useGroupStore from "../store/useGroupStore";
+import Header from "./Header";
+import Footer from "./Footer";
+import GroupsLists from "./GroupsLists";
+import { deleteGroup, loadGroups } from "../utils/groupsStorage";
+
+function ConfirmDeleteModal({ open, groupName, onCancel, onConfirm }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/40"
+        onClick={onCancel}
+      />
+      <div className="relative w-[92%] max-w-sm rounded-2xl bg-white p-4 shadow-xl text-right">
+        <div className="font-bold">حذف گروه</div>
+        <div className="mt-2 text-sm text-gray-700">
+          مطمئنی گروه <span className="font-bold">{groupName}</span> حذف بشه؟
+        </div>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-200 rounded-xl"
+          >
+            انصراف
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-orange-500 text-white rounded-xl"
+          >
+            حذف
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SwipeToRevealDelete({ children, onDelete }) {
+  const MAX_TRANSLATE = 88;
+  const THRESHOLD = 40;
+
+  const [translateX, setTranslateX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+
+  function handlePointerDown(e) {
+    setDragging(true);
+    setStartX(e.clientX);
+  }
+
+  function handlePointerMove(e) {
+    if (!dragging) return;
+
+    const delta = e.clientX - startX;
+
+    if (delta < 0) {
+      setTranslateX(Math.max(delta, -MAX_TRANSLATE));
+    }
+
+    if (translateX < 0 && delta > 0) {
+      setTranslateX(Math.min(0, delta - MAX_TRANSLATE));
+    }
+  }
+
+  function handlePointerUp() {
+    setDragging(false);
+
+    if (translateX < -THRESHOLD) {
+      setTranslateX(-MAX_TRANSLATE);
+    } else {
+      setTranslateX(0);
+    }
+  }
+
+  return (
+    <div className="relative overflow-hidden rounded-xl">
+      <div className="absolute inset-y-0 right-0 w-[88px] flex items-center justify-center bg-orange-500">
+        <button
+          onClick={onDelete}
+          className="h-full w-full text-white font-bold"
+        >
+          حذف
+        </button>
+      </div>
+
+      <div
+        className="touch-pan-y select-none transition-transform duration-200"
+        style={{ transform: `translateX(${translateX}px)` }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
-
   const resetGroup = useGroupStore((state) => state.resetGroup);
   const navigate = useNavigate();
 
-
-  
   const [groupDetails, setGroupDetails] = useState([]);
+
   function handleAddGroup() {
     setGroupDetails((prev) => [
-      ...prev, { name: "", expense: "", image: "" },
+      ...prev,
+      { name: "", expense: "", image: "" },
     ]);
   }
 
   const [savedGroups, setSavedGroups] = useState([]);
+
   function refreshGroups() {
     const groups = loadGroups()
       .slice()
-      .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0));
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
     setSavedGroups(groups);
   }
 
@@ -33,85 +131,77 @@ export default function App() {
     refreshGroups();
   }, []);
 
-  const [theme, setTheme] = useState("light");
-  function handleUpdate() {
-    setTheme(theme === 'light' ? 'dark': 'light');
-  }
-
+  const [pendingDeleteGroup, setPendingDeleteGroup] = useState(null);
 
   return (
-    <div 
-      className= {
-        ` w-full max-w-md mx-auto min-h-screen relative p-2 shadow-xl
-        ${theme === "light" ? "bg-white text-black" : "bg-gray-900 text-white"} `
-      }
-    >
-      <button 
-        onClick={handleUpdate} 
-        className= {`
-          w-14 h-7 rounded-xl transition-colors duration-300
-          ${theme === "light" ? "bg-gray-300" : "bg-orange-500"}
-        `}> 
-
-        <span
-          className={`h-6 rounded-full transform transition-transform duration-300
-            ${theme === "light" ? "translate-x-0" : "translate-x-7"}
-          `}
-        > {theme === 'light' ? '🔆' : '🔘'} </span> 
-
-      </button>
+    <div className="w-full max-w-md mx-auto min-h-screen p-3">
       <Header />
 
       <GroupsLists
         groupDetails={groupDetails}
         setGroupDetails={setGroupDetails}
-        onAddGroup={handleAddGroup} 
+        onAddGroup={handleAddGroup}
       />
 
-      <div className="flex items-center justify-end gap-2 mt-4">
+      <div className="mt-4 flex justify-end">
         <button
-          className="px-4 py-2 bg-orange-500 text-white rounded-lg font-bold"
           onClick={() => {
             resetGroup();
             navigate("/new-group");
           }}
+          className="bg-orange-500 text-white px-4 py-2 rounded-xl"
         >
           ساخت گروه جدید
         </button>
       </div>
 
       {savedGroups.length > 0 && (
-        <div className="mt-4 border border-gray-200 rounded-xl p-3 text-right">
+        <div className="mt-4 border rounded-xl p-3 text-right">
           <h2 className="font-bold mb-2">لیست گروه‌ها</h2>
+
           <ul className="flex flex-col gap-2">
             {savedGroups.map((g) => (
-              <li
-                key={g.id}
-                className="border border-gray-100 rounded-xl p-3 flex flex-col gap-1"
-              >
-                <div className="flex justify-between items-center">
-                  <span className="font-bold">{g.name}</span>
-                  <span className="text-sm opacity-80">
-                    {new Date(g.createdAt).toLocaleDateString("fa-IR")}
-                  </span>
-                </div>
-                <div className="text-sm opacity-90">
-                  هزینه <span className="font-bold">{g.cost}</span> تومان
-                </div>
-                <div className="text-sm opacity-90">
-                  اعضا: <span className="font-bold">{g.members?.length || 0}</span>
-                </div>
+              <li key={g.id}>
+                <SwipeToRevealDelete
+                  onDelete={() =>
+                    setPendingDeleteGroup({ id: g.id, name: g.name })
+                  }
+                >
+                  <div className="border rounded-xl p-3 bg-white">
+                    <div className="flex flex-row-reverse justify-between">
+                      <span className="font-bold">{g.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {new Date(g.createdAt).toLocaleDateString("fa-IR")}
+                      </span>
+                    </div>
+
+                    <div className="text-sm text-gray-500">
+                      هزینه: <b>{g.cost}</b> تومان
+                    </div>
+
+                    <div className="text-sm text-gray-500">
+                      اعضا: <b>{g.members?.length || 0}</b>
+                    </div>
+                  </div>
+                </SwipeToRevealDelete>
               </li>
             ))}
           </ul>
         </div>
       )}
 
+      <ConfirmDeleteModal
+        open={!!pendingDeleteGroup}
+        groupName={pendingDeleteGroup?.name}
+        onCancel={() => setPendingDeleteGroup(null)}
+        onConfirm={() => {
+          deleteGroup(pendingDeleteGroup.id);
+          setPendingDeleteGroup(null);
+          refreshGroups();
+        }}
+      />
+
       <Footer />
     </div>
   );
 }
-
-
-
-

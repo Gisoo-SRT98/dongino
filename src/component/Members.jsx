@@ -116,7 +116,7 @@ function MemberName({addMembers, updateMemberName, onAddNewInput, onRemoveMember
                         className="border border-gray-200  w-full max-w-inherit m-4 p-2 rounded-xl text-right"
                         placeholder="اسم عضو جدید را وارد کنید"
                     />
-                    <Button className="rounded-md font-light">{index}</Button>
+                    <button className="rounded-md font-bold">{index + 1}</button>
                 </li>
             ))}
        </>

@@ -42,3 +42,8 @@ code {
   }
 }
 
+/* When app background is dark, gray-500 text should be white */
+.dark .text-gray-500 {
+  color: #fff;
+}
+

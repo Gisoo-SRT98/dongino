@@ -22,3 +22,10 @@ export function addGroup(group) {
   return next;
 }
 
+export function deleteGroup(groupId) {
+  const groups = loadGroups();
+  const next = groups.filter((g) => g?.id !== groupId);
+  saveGroups(next);
+  return next;
+}
+
