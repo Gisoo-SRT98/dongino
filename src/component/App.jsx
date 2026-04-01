@@ -1,16 +1,16 @@
 import useGroupStore from "../store/useGroupStore";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Footer from "./Footer";
 import GroupsLists  from "./GroupsLists";
 import Header from "./Header";
-import Button from "./Button";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { loadGroups } from "../utils/groupsStorage";
 
 
 export default function App() {
 
-  const groupName = useGroupStore((state) => state.groupName);
-  const cost = useGroupStore((state) => state.cost);
+  const resetGroup = useGroupStore((state) => state.resetGroup);
+  const navigate = useNavigate();
 
 
   
@@ -20,6 +20,18 @@ export default function App() {
       ...prev, { name: "", expense: "", image: "" },
     ]);
   }
+
+  const [savedGroups, setSavedGroups] = useState([]);
+  function refreshGroups() {
+    const groups = loadGroups()
+      .slice()
+      .sort((a, b) => (b?.createdAt || 0) - (a?.createdAt || 0));
+    setSavedGroups(groups);
+  }
+
+  useEffect(() => {
+    refreshGroups();
+  }, []);
 
   const [theme, setTheme] = useState("light");
   function handleUpdate() {
@@ -56,21 +68,45 @@ export default function App() {
         onAddGroup={handleAddGroup} 
       />
 
-      <Link to="/new-group">
-        <Button className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg">
-          +
-        </Button>
-      </Link>
+      <div className="flex items-center justify-end gap-2 mt-4">
+        <button
+          className="px-4 py-2 bg-orange-500 text-white rounded-lg font-bold"
+          onClick={() => {
+            resetGroup();
+            navigate("/new-group");
+          }}
+        >
+          ساخت گروه جدید
+        </button>
+      </div>
 
-      {groupName && 
-        <div className="border border-gray-200 p-4 rounded-xl m-2 text-right">
-          <h2>اسم گروه: <span className="font-bold">{groupName}</span></h2>
-          <h3>
-            هزینه: <span className="font-bold">{cost}</span> تومان
-          </h3>
+      {savedGroups.length > 0 && (
+        <div className="mt-4 border border-gray-200 rounded-xl p-3 text-right">
+          <h2 className="font-bold mb-2">لیست گروه‌ها</h2>
+          <ul className="flex flex-col gap-2">
+            {savedGroups.map((g) => (
+              <li
+                key={g.id}
+                className="border border-gray-100 rounded-xl p-3 flex flex-col gap-1"
+              >
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">{g.name}</span>
+                  <span className="text-sm opacity-80">
+                    {new Date(g.createdAt).toLocaleDateString("fa-IR")}
+                  </span>
+                </div>
+                <div className="text-sm opacity-90">
+                  هزینه <span className="font-bold">{g.cost}</span> تومان
+                </div>
+                <div className="text-sm opacity-90">
+                  اعضا: <span className="font-bold">{g.members?.length || 0}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      } 
-      
+      )}
+
       <Footer />
     </div>
   );

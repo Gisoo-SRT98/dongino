@@ -8,7 +8,8 @@ export default function GroupName() {
     return (
         <div className="border border-gray-200 rounded-xl p-4 text-right flex flex-col gap-2">
             <label className="font-normal">   
-                اسم گروه : 
+                اسم گروه
+                <span className="text-red-500 font-bold"> *</span>
                 <span className="font-bold">{groupName}</span>
             </label>
                 <input
