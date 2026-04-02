@@ -103,9 +103,9 @@ export default function MemberLists() {
           )}
         </ul>
       </div>
-      <div className=" bottom-0 max-w-inherit h-16 border-t border-gray-200 flex items-center fixed">
+      <div className="fixed bottom-0 w-[433px] max-w-screen-md h-16 bg-white border-t border-gray-200 flex items-center px-4">
         <button
-          className="w-full bg-orange-500 p-2 rounded-xl"
+          className="w-full bg-orange-500 p-3 rounded-xl text-white"
           onClick={handleCreateGroup}
         >
           ساخت گروه
