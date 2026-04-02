@@ -29,3 +29,14 @@ export function deleteGroup(groupId) {
   return next;
 }
 
+export function updateGroup(group) {
+  const groups = loadGroups();
+  const next = groups.map((item) =>
+    item?.id === group.id
+      ? { ...item, ...group, createdAt: item.createdAt ?? group.createdAt }
+      : item
+  );
+  saveGroups(next);
+  return next;
+}
+

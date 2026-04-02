@@ -106,6 +106,10 @@ function SwipeToRevealDelete({ children, onDelete }) {
 
 export default function App() {
   const resetGroup = useGroupStore((state) => state.resetGroup);
+  const setGroupId = useGroupStore((state) => state.setGroupId);
+  const setGroupName = useGroupStore((state) => state.setGroupName);
+  const setCost = useGroupStore((state) => state.setCost);
+  const setMembers = useGroupStore((state) => state.setMembers);
   const navigate = useNavigate();
 
   const [groupDetails, setGroupDetails] = useState([]);
@@ -127,6 +131,14 @@ export default function App() {
     setSavedGroups(groups);
   }
 
+  function handleEditGroup(group) {
+    setGroupId(group.id);
+    setGroupName(group.name || "");
+    setCost(group.cost ?? "");
+    setMembers(group.members || []);
+    navigate("/new-group", { state: { editGroupId: group.id } });
+  }
+
   useEffect(() => {
     refreshGroups();
   }, []);
@@ -134,7 +146,7 @@ export default function App() {
   const [pendingDeleteGroup, setPendingDeleteGroup] = useState(null);
 
   return (
-    <div className="w-full max-w-md mx-auto min-h-screen p-3">
+    <div className="w-full max-w-md mx-auto min-h-screen p-3 border border-gray-200 rounded-xl">
       <Header />
 
       <GroupsLists
@@ -167,7 +179,10 @@ export default function App() {
                     setPendingDeleteGroup({ id: g.id, name: g.name })
                   }
                 >
-                  <div className="border rounded-xl p-3 bg-white">
+                  <div
+                    className="border rounded-xl p-3 bg-white cursor-pointer"
+                    onClick={() => handleEditGroup(g)}
+                  >
                     <div className="flex flex-row-reverse justify-between">
                       <span className="font-bold">{g.name}</span>
                       <span className="text-sm text-gray-500">

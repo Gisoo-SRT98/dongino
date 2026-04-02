@@ -1,13 +1,27 @@
 import { create } from "zustand";
 
-const useGroupStore = create ((set) => ({
-    groupName: "",
-    setGroupName: (name) => set({ groupName: name }),
+const useGroupStore = create((set) => ({
+  groupId: "",
+  groupName: "",
+  cost: "",
+  members: [],
 
-    cost: "",
-    setCost: (expensGroup) => set({ cost: expensGroup }),
+  setGroupId: (id) => set({ groupId: id }),
+  setGroupName: (name) => set({ groupName: name }),
+  setCost: (expensGroup) => set({ cost: expensGroup }),
+  setMembers: (members) => set({ members }),
 
-    resetGroup: () => set({ groupName: "", cost: "" }),
+  addMember: () => set((state) => ({ members: [...state.members, ""] })),
+  removeMember: (index) =>
+    set((state) => ({ members: state.members.filter((_, i) => i !== index) })),
+  updateMember: (index, value) =>
+    set((state) => {
+      const next = [...state.members];
+      next[index] = value;
+      return { members: next };
+    }),
+
+  resetGroup: () => set({ groupId: "", groupName: "", cost: "", members: [] }),
 }));
 
 export default useGroupStore;

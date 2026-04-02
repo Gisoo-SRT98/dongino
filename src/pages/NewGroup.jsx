@@ -1,13 +1,32 @@
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import Expenses from "../component/expens";
 import GroupName from "../component/GroupName";
 import MemberLists from "../component/Members";
 import useGroupStore from "../store/useGroupStore";
+import { loadGroups } from "../utils/groupsStorage";
 
 export default function NewGroupPage() {
-
     const { groupName } = useGroupStore();
+    const setGroupId = useGroupStore((state) => state.setGroupId);
+    const setGroupName = useGroupStore((state) => state.setGroupName);
+    const setCost = useGroupStore((state) => state.setCost);
+    const setMembers = useGroupStore((state) => state.setMembers);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const editGroupId = location.state?.editGroupId;
+        if (!editGroupId) return;
+
+        const group = loadGroups().find((item) => item.id === editGroupId);
+        if (!group) return;
+
+        setGroupId(group.id);
+        setGroupName(group.name || "");
+        setCost(group.cost ?? "");
+        setMembers(group.members || []);
+    }, [location.state, setGroupId, setGroupName, setCost, setMembers]);
 
     return (
         <div className="w-full max-w-md mx-auto min-h-screen relative p-2 shadow-xl flex flex-col gap-4">

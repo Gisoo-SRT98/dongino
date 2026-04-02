@@ -1,124 +1,150 @@
-import useGroupStore from "../store/useGroupStore";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useGroupStore from "../store/useGroupStore";
 import Button from "./Button";
-import { addGroup } from "../utils/groupsStorage";
+import { addGroup, updateGroup } from "../utils/groupsStorage";
 
 export default function MemberLists() {
+  const groupId = useGroupStore((state) => state.groupId);
+  const groupName = useGroupStore((state) => state.groupName);
+  const cost = useGroupStore((state) => state.cost);
+  const members = useGroupStore((state) => state.members);
+  const addMember = useGroupStore((state) => state.addMember);
+  const removeMember = useGroupStore((state) => state.removeMember);
+  const updateMember = useGroupStore((state) => state.updateMember);
+  const resetGroup = useGroupStore((state) => state.resetGroup);
+  const [showAddName, setShowAddName] = useState(true);
+  const navigate = useNavigate();
 
-    const groupName = useGroupStore((state) => state.groupName);
-    const cost = useGroupStore((state) => state.cost);
-    const resetGroup = useGroupStore((state) => state.resetGroup);
-    const [addMembers, setAddMembers] = useState([]);
-    const [showAddName, setShowAddName] = useState(true);
-    const navigate = useNavigate();
- 
-    // function handleGoHome() {
-    //     navigate("/");
-    // }
-    // این فانکشن که بره به کدوم صفحه و اطلاعات رو ذخیره کنه رو همزمان تو ی فانکشن میت=نویسیم
+  // function handleGoHome() {
+  //     navigate("/");
+  // }
+  // این فانکشن که بره به کدوم صفحه و اطلاعات رو ذخیره کنه رو همزمان تو ی فانکشن میت=نویسیم
 
-    function handleCreateGroup() {
-        if (!groupName.trim()) return;
-        const members = addMembers.map((m) => m.trim()).filter(Boolean);
-        addGroup({
-          id: crypto.randomUUID(),
-          name: groupName.trim(),
-          cost: Number(cost) || 0,
-          members,
-          createdAt: Date.now(),
-        });
-        resetGroup();
-        setAddMembers([]);
-        navigate("/");
-    }
-    
-    function handleAddMember() {
-        setAddMembers(prev => [...prev, ""]);
-        console.log("testhandleAddMember");
-        // مقدار قبلی آرایه اعضا رو بگیر و یه input خالی جدید به آخرش اضافه کن.
-    }
+  function handleCreateGroup() {
+    if (!groupName.trim()) return;
+    const normalizedMembers = members.map((m) => m.trim()).filter(Boolean);
 
-    function handleRemoveMember(index) {
-        setAddMembers(prev => prev.filter((_, i) => i !== index));
-        console.log(handleRemoveMember);
+    if (groupId) {
+      updateGroup({
+        id: groupId,
+        name: groupName.trim(),
+        cost: Number(cost) || 0,
+        members: normalizedMembers,
+      });
+    } else {
+      addGroup({
+        id: crypto.randomUUID(),
+        name: groupName.trim(),
+        cost: Number(cost) || 0,
+        members: normalizedMembers,
+        createdAt: Date.now(),
+      });
     }
 
-    function handleShowAddName() {
-        setShowAddName((show) => !show)
-    }
+    resetGroup();
+    navigate("/");
+  }
 
-    function updateMemberName(index, value) {
-        const updated = [...addMembers];
-        updated[index] = value;
-        setAddMembers(updated);
-    }
+  function handleAddMember() {
+    addMember();
+  }
 
-    return (
-        <>
-            <div>
-                <div className="flex justify-between items-center">
-                    <button 
-                        className="text-base bg-orange-500 rounded-xl p-2" 
-                        onClick={handleAddMember}
-                    >
-                        افزودن عضو
-                    </button>
-                    <span>
-                        اعضای گروه
-                        <span className="text-red-500 font-bold"> *</span>
-                    </span>
-                </div>
-                <div className="flex flex-wrap gap-2 justify-right my-4">
-                    {addMembers.map((name, i) => (
-                        name && 
-                        <span key={i} className="bg-orange-100 text-orange-700 px-3 py-1 rounded-xl">
-                            {name}
-                        </span>
-                    ))}
-                </div>
-                <ul>
-                    {showAddName && 
-                        <MemberName 
-                            addMembers={addMembers}
-                            updateMemberName={updateMemberName}
-                            handleShowAddName={handleShowAddName}
-                            showAddName={showAddName}
-                            onAddNewInput={handleAddMember}
-                            onRemoveMember={handleRemoveMember}
-                        />
-                    }
-                </ul>
-            </div>
-            <div className=" bottom-0 max-w-inherit h-16 border-t border-gray-200 flex items-center fixed">
-                <button className="w-full bg-orange-500 p-2 rounded-xl" onClick={handleCreateGroup} >ساخت گروه</button>
-            </div>
-        </>
-    ) 
+  function handleRemoveMember(index) {
+    removeMember(index);
+  }
+
+  function handleShowAddName() {
+    setShowAddName((show) => !show);
+  }
+
+  function updateMemberName(index, value) {
+    updateMember(index, value);
+  }
+
+  return (
+    <>
+      <div>
+        <div className="flex justify-between items-center">
+          <button
+            className="text-base bg-orange-500 rounded-xl p-2"
+            onClick={handleAddMember}
+          >
+            افزودن عضو
+          </button>
+          <span>
+            اعضای گروه
+            <span className="text-red-500 font-bold"> *</span>
+          </span>
+        </div>
+        <div className="flex flex-wrap gap-2 justify-right my-4">
+          {members.map(
+            (name, i) =>
+              name && (
+                <span
+                  key={i}
+                  className="bg-orange-100 text-orange-700 px-3 py-1 rounded-xl"
+                >
+                  {name}
+                </span>
+              ),
+          )}
+        </div>
+        <ul className="mb-[70px]">
+          {showAddName && (
+            <MemberName
+              addMembers={members}
+              updateMemberName={updateMemberName}
+              handleShowAddName={handleShowAddName}
+              showAddName={showAddName}
+              onAddNewInput={handleAddMember}
+              onRemoveMember={handleRemoveMember}
+            />
+          )}
+        </ul>
+      </div>
+      <div className=" bottom-0 max-w-inherit h-16 border-t border-gray-200 flex items-center fixed">
+        <button
+          className="w-full bg-orange-500 p-2 rounded-xl"
+          onClick={handleCreateGroup}
+        >
+          ساخت گروه
+        </button>
+      </div>
+    </>
+  );
 }
 
+function MemberName({
+  addMembers,
+  updateMemberName,
+  onAddNewInput,
+  onRemoveMember,
+}) {
+  return (
+    <>
+      {addMembers.map((member, index) => (
+        <li key={index} className="flex justify-between items-center">
+          <Button
+            onClick={
+              index === addMembers.length - 1
+                ? onAddNewInput
+                : () => onRemoveMember(index)
+            }
+          >
+            {index === addMembers.length - 1 ? "+" : "-"}
+          </Button>
 
-function MemberName({addMembers, updateMemberName, onAddNewInput, onRemoveMember }){
-    return (
-        <>
-            {addMembers.map((member, index) => (
-                <li key={index} className="flex justify-between items-center" >
-                   <Button 
-                        onClick={index === addMembers.length - 1 ? onAddNewInput : () => onRemoveMember(index)}
-                    >
-                        {index === addMembers.length - 1 ? "+" : "-"}
-                    </Button> 
-                    
-                    <input 
-                        type="text"
-                        value={member}
-                        onChange={(e)=> updateMemberName(index, e.target.value)}
-                        className="border border-gray-200  w-full max-w-inherit m-4 p-2 rounded-xl text-right"
-                        placeholder="اسم عضو جدید را وارد کنید"
-                    />
-                    <button className="rounded-md font-bold">{index + 1}</button>
-                </li>
-            ))}
-       </>
-    )
+          <input
+            type="text"
+            value={member}
+            onChange={(e) => updateMemberName(index, e.target.value)}
+            className="border border-gray-200  w-full max-w-inherit m-4 p-2 rounded-xl text-right"
+            placeholder="اسم عضو جدید را وارد کنید"
+          />
+          <button className="rounded-md font-bold">{index + 1}</button>
+        </li>
+      ))}
+    </>
+  );
 }
