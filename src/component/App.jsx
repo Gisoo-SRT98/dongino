@@ -49,24 +49,30 @@ function SwipeToRevealDelete({ children, onDelete }) {
   const [translateX, setTranslateX] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [startX, setStartX] = useState(0);
+  const [startTranslateX, setStartTranslateX] = useState(0);
+  const [preventClick, setPreventClick] = useState(false);
 
   function handlePointerDown(e) {
     setDragging(true);
     setStartX(e.clientX);
+    setStartTranslateX(translateX);
+    setPreventClick(false);
   }
 
   function handlePointerMove(e) {
     if (!dragging) return;
 
     const delta = e.clientX - startX;
-
-    if (delta < 0) {
-      setTranslateX(Math.max(delta, -MAX_TRANSLATE));
+    if (Math.abs(delta) > 8) {
+      setPreventClick(true);
     }
 
-    if (translateX < 0 && delta > 0) {
-      setTranslateX(Math.min(0, delta - MAX_TRANSLATE));
-    }
+    const nextTranslateX = Math.max(
+      Math.min(startTranslateX + delta, 0),
+      -MAX_TRANSLATE,
+    );
+
+    setTranslateX(nextTranslateX);
   }
 
   function handlePointerUp() {
@@ -97,6 +103,14 @@ function SwipeToRevealDelete({ children, onDelete }) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onClickCapture={(e) => {
+          if (preventClick) {
+            e.preventDefault();
+            e.stopPropagation();
+            setPreventClick(false);
+          }
+        }}
       >
         {children}
       </div>
@@ -115,10 +129,7 @@ export default function App() {
   const [groupDetails, setGroupDetails] = useState([]);
 
   function handleAddGroup() {
-    setGroupDetails((prev) => [
-      ...prev,
-      { name: "", expense: "", image: "" },
-    ]);
+    setGroupDetails((prev) => [...prev, { name: "", expense: "", image: "" }]);
   }
 
   const [savedGroups, setSavedGroups] = useState([]);
@@ -168,7 +179,7 @@ export default function App() {
       </div>
 
       {savedGroups.length > 0 && (
-        <div className="mt-4 border rounded-xl p-3 text-right">
+        <div className="mt-4 border border-gray-200 rounded-xl p-3 text-right">
           <h2 className="font-bold mb-2">لیست گروه‌ها</h2>
 
           <ul className="flex flex-col gap-2">
@@ -180,7 +191,7 @@ export default function App() {
                   }
                 >
                   <div
-                    className="border rounded-xl p-3 bg-white cursor-pointer"
+                    className="border rounded-xl p-3 bg-white cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
                     onClick={() => handleEditGroup(g)}
                   >
                     <div className="flex flex-row-reverse justify-between">
