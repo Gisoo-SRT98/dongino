@@ -4,6 +4,7 @@ import './index.css';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from './component/App';
 import NewGroupPage from '@/pages/newGroup';
+import ProfilePage from '@/pages/Profile';
 
 function NotFound() {
   return <h1>404 not found</h1>;
@@ -16,6 +17,7 @@ root.render(
     <Routes>
       <Route path="/" element={<App />} />
       <Route path="/new-group" element={<NewGroupPage />} />
+      <Route path="/profile" element={<ProfilePage />} />
       <Route path="/*" element={<NotFound />} />
     </Routes>
   </BrowserRouter>

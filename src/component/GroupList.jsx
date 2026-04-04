@@ -167,8 +167,8 @@ export default function GroupList() {
       </div>
 
       {savedGroups.length > 0 && (
-        <div className="mt-4 border border-gray-200 rounded-xl p-3 text-right">
-          <h2 className="font-bold mb-2">لیست گروه‌ها</h2>
+        <div className="rounded-xl p-3 text-right">
+          <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
 
           <ul className="flex flex-col gap-2">
             {savedGroups.map((g) => (
