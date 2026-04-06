@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
 import Button from "./Button";
@@ -18,7 +18,24 @@ export default function MemberLists() {
   const setMemberDebts = useGroupStore((state) => state.setMemberDebts);
   const resetGroup = useGroupStore((state) => state.resetGroup);
   const [showAddName, setShowAddName] = useState(true);
+  const [showGroupNameAlert, setShowGroupNameAlert] = useState(false);
+  const alertTimeoutRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (showGroupNameAlert) {
+      alertTimeoutRef.current = setTimeout(() => {
+        setShowGroupNameAlert(false);
+      }, 5000);
+    }
+
+    return () => {
+      if (alertTimeoutRef.current) {
+        clearTimeout(alertTimeoutRef.current);
+        alertTimeoutRef.current = null;
+      }
+    };
+  }, [showGroupNameAlert]);
 
   useEffect(() => {
     if (splitEqual === false) {
@@ -40,7 +57,10 @@ export default function MemberLists() {
   }
 
   function handleCreateGroup() {
-    if (!groupName.trim()) return;
+    if (!groupName.trim()) {
+      setShowGroupNameAlert(true);
+      return;
+    }
     const normalizedMembers = members.map((m) => m.trim()).filter(Boolean);
 
     const groupData = {
@@ -94,6 +114,47 @@ export default function MemberLists() {
 
   return (
     <>
+      {showGroupNameAlert && (
+        <div className="fixed top-4 left-4 right-4 z-50 bg-gray-100 border border-gray-300 rounded-lg p-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-gray-600"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span className="text-gray-800 font-medium">
+                اسم گروه را وارد کنید
+              </span>
+            </div>
+            <button
+              onClick={() => setShowGroupNameAlert(false)}
+              className="text-gray-500 hover:text-gray-700 transition-colors"
+              aria-label="بستن هشدار"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
       <div className="border border-gray-200 rounded-xl p-4">
         <div className="flex justify-between items-center">
           <button
@@ -209,8 +270,8 @@ function MemberName({
               pattern="[0-9]*"
               value={memberDebts[index] ?? ""}
               onChange={(e) => onDebtChange(index, e.target.value)}
-              placeholder="مبلغ بدهی (تومان)"
-              className="border-2 border-red-300 bg-red-50 text-red-700 text-sm w-full max-w-inherit p-2 rounded-xl text-right font-semibold"
+              placeholder=" مبلغ بدهی این عضو را وارد کنید"
+              className="text-sm border-1 border-red-300 bg-red-50 text-red-700 text-sm w-full max-w-inherit p-2 rounded-xl text-right font-semibold"
             />
           )}
         </li>

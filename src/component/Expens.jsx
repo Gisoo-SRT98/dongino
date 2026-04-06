@@ -60,7 +60,7 @@ export default function Expenses() {
     popupTimeoutRef.current = setTimeout(() => {
       setShowSplitModal(true);
       popupTimeoutRef.current = null;
-    }, 800);
+    }, 1000);
   }
 
   function handleSplitChoice(equal) {
@@ -113,15 +113,19 @@ export default function Expenses() {
           <button
             type="button"
             onClick={handleConfirmCost}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-gray-300"
+            className="inline-flex h-10 w-10 items-center justify-center bg-white text-gray-500 transition"
             aria-label="تایید هزینه و نمایش پنجره"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
+              width="35"
+              height="35"
               viewBox="0 0 24 24"
-              className={isCostConfirmed ? "text-green-500" : "text-gray-500"}
+              className={
+                isCostConfirmed
+                  ? "text-lime-500 border-2 border-lime-500 rounded-full p-1"
+                  : "text-gray-500 rounded-full border-2 border-gray-200 "
+              }
               stroke="currentColor"
               fill="none"
               strokeWidth="2.5"
