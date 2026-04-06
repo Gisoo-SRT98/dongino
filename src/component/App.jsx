@@ -4,9 +4,9 @@ import GroupList from "./GroupList";
 
 export default function App() {
   return (
-    <div className="relative w-full max-w-md mx-auto h-screen flex flex-col border border-gray-200 rounded-xl overflow-hidden">
+    <div className="relative w-full max-w-md mx-auto h-screen flex flex-col overflow-hidden">
       <Header />
-      <main className="overflow-auto mb-18">
+      <main className="overflow-auto px-2">
         <GroupList />
       </main>
       <Footer />

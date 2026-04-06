@@ -66,7 +66,7 @@ export default function ProfilePage() {
               className={`flex-1 py-3 text-sm rounded-lg transition-all duration-200 ${
                 loginType === "username"
                   ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "border border-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
               نام کاربری
@@ -76,7 +76,7 @@ export default function ProfilePage() {
               className={`flex-1 py-3 rounded-lg  transition-all duration-200 ${
                 loginType === "email"
                   ? "bg-orange-500 text-white"
-                  : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  : "border border-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
               ایمیل
@@ -85,7 +85,7 @@ export default function ProfilePage() {
 
           {/* Error Message */}
           {error && (
-            <div className="p-4 bg-red-100 text-red-800 rounded-lg mb-4 text-right border border-red-300">
+            <div className="text-xs p-1 bg-red-100 text-red-800 rounded-md mb-4 text-right border border-red-300">
               {error}
             </div>
           )}

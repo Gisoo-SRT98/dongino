@@ -5,7 +5,12 @@ export default function Footer() {
   const navigate = useNavigate();
   return (
     <footer className="absolute bottom-0 w-full h-16 border-t border-gray-200 bg-white flex justify-around items-center">
-      <button className="text-gray-500 hover:text-gray-700">
+      <button
+        className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center"
+        onClick={() => {
+          navigate("/");
+        }}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="28px"
@@ -41,7 +46,7 @@ export default function Footer() {
         </svg>
         <p className="text-xs pt-2">خانه</p>
       </button>
-      <button className="text-gray-500 hover:text-gray-700">
+      <button className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="28px"
@@ -65,7 +70,7 @@ export default function Footer() {
         <p className="text-xs pt-2">تنظیمات</p>
       </button>
       <button
-        className="text-gray-500 hover:text-gray-700"
+        className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center"
         onClick={() => {
           navigate("/profile");
         }}

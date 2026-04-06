@@ -17,7 +17,7 @@ export default function GroupName() {
                     value={groupName}
                     onChange={(e) => setGroupName(e.target.value)}
                     placeholder="اسم گروه را وارد کنید"
-                    className="border border-gray-200 rounded-md p-1 text-gray-500 text-right"
+                    className="border border-gray-200 rounded-md p-1 text-right text-gray-500 text-sm"
                 />
            
         </div>

@@ -56,7 +56,7 @@ export default function ProfileSection() {
   return (
     <div className="space-y-6">
       {/* Profile Image Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-gray-100">
         <h2 className="text-xl font-bold mb-4 text-right"> پروفایل</h2>
         <div className="flex flex-col items-center gap-4">
           <div className="w-25 h-25 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center overflow-hidden border-4 border-gray-300">
@@ -85,7 +85,7 @@ export default function ProfileSection() {
       </div>
 
       {/* User Information Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white p-6 rounded-lg border border-gray-100">
         <h2 className="text-xl font-bold mb-4 text-right">ℹ️ اطلاعات کاربری</h2>
         <div className="space-y-3 text-right">
           {user.username && (
@@ -112,15 +112,15 @@ export default function ProfileSection() {
       </div>
 
       {/* Change Password Section */}
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white p-6 rounded-lg border border-gray-100">
+        <div className="flex items-center justify-between">
           <button
             onClick={() => setIsEditingPassword(!isEditingPassword)}
             className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 font-medium"
           >
-            🔐 {isEditingPassword ? "لغو" : "تغییر رمز عبور"}
+            {isEditingPassword ? "لغو" : "تغییر رمز عبور"}
           </button>
-          <h2 className="text-xl font-bold">🔑 رمز عبور</h2>
+          <h2 className="text-xl font-bold"> رمز عبور</h2>
         </div>
 
         {isEditingPassword && (
@@ -133,7 +133,7 @@ export default function ProfileSection() {
                 type="password"
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
+                className="text-sm w-full px-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
                 placeholder="رمز عبور فعلی را وارد کنید"
               />
             </div>
@@ -146,7 +146,7 @@ export default function ProfileSection() {
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
+                className="text-sm w-full px-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
                 placeholder="رمز عبور جدید را وارد کنید"
               />
             </div>
@@ -159,7 +159,7 @@ export default function ProfileSection() {
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
+                className="text-sm w-full px-4 py-2 border border-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-right"
                 placeholder="رمز عبور جدید را دوباره وارد کنید"
               />
             </div>
@@ -178,9 +178,9 @@ export default function ProfileSection() {
 
             <button
               onClick={handlePasswordUpdate}
-              className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 font-medium"
+              className="w-full px-4 py-2 bg-lime-500 hover:bg-lime-600 text-white rounded-lg transition-all duration-200 font-medium"
             >
-              💾 ذخیره تغییرات
+              ذخیره تغییرات
             </button>
           </div>
         )}
@@ -191,7 +191,7 @@ export default function ProfileSection() {
         onClick={logout}
         className="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all duration-200 font-medium"
       >
-        🚪 خروج از حساب
+        خروج از حساب
       </button>
     </div>
   );

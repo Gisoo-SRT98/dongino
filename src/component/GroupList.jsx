@@ -170,7 +170,7 @@ export default function GroupList() {
         <div className="rounded-xl p-3 text-right">
           <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
 
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-2 mb-16">
             {savedGroups.map((g) => (
               <li key={g.id}>
                 <SwipeToRevealDelete
