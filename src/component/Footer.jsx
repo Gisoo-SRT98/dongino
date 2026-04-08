@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 export default function Footer() {
   const navigate = useNavigate();
   return (
-    <footer className="absolute bottom-0 w-full h-16 border-t border-gray-200 bg-white flex justify-around items-center">
+    <footer className="absolute bottom-0 w-full h-16 border-t border-gray-200 flex justify-around items-center">
       <button
         className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center"
         onClick={() => {

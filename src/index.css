@@ -26,11 +26,15 @@ code {
 }
 
 .App {
-  background: #fff;
+  background: var(--background);
   border: 1px solid #e2e2e2;
   border-radius: 10px;
   margin: 10px auto;
   padding: 10px;
+}
+
+.dark .App {
+  border: 1px solid var(--secondary);
 }
 
 .container {
@@ -46,6 +50,35 @@ code {
 @layer base {
   html {
     @apply text-base;
+  }
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+    --secondary: #666666;
+    --headline: #000000;
+    --hover: #f0f0f0;
+  }
+  .dark {
+    --background: #0d1117;
+    --foreground: #c9d1d9;
+    --secondary: #8b949e;
+    --headline: #f0f6fc;
+    --hover: #21262d;
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: var(--headline);
+  }
+  .text-secondary {
+    color: var(--secondary);
   }
 }
 

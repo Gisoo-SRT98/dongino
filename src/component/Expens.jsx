@@ -94,7 +94,7 @@ export default function Expenses() {
     <>
       {showInitialSplitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-right shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-[var(--background)] border border-gray-200 p-6 text-right shadow-2xl">
             <p className="text-lg font-semibold mb-4">
               آیا هزینه به صورت مساوی بین اعضا تقسیم شود؟
             </p>

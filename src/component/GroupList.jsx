@@ -180,7 +180,7 @@ export default function GroupList() {
                   }
                 >
                   <div
-                    className="border rounded-xl p-3 bg-white cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
+                    className="border rounded-xl p-3 bg-[var(--background)] cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
                     onClick={() => handleEditGroup(g)}
                   >
                     <div className="flex flex-row-reverse justify-between">
