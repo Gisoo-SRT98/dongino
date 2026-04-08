@@ -135,7 +135,7 @@ export default function Expenses() {
           <button
             type="button"
             onClick={handleConfirmCost}
-            className="inline-flex h-10 w-10 items-center justify-center bg-white text-gray-500 transition"
+            className="inline-flex h-10 w-10 items-center justify-center bg-[var(--background)] text-gray-500 transition"
             aria-label="تایید هزینه و نمایش پنجره"
           >
             <svg

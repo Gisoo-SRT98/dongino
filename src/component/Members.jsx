@@ -157,7 +157,7 @@ export default function MemberLists() {
       <div className="border border-gray-200 rounded-xl p-4">
         <div className="flex justify-between items-center">
           <button
-            className="text-base bg-orange-500 rounded-xl p-2"
+            className="bg-orange-500 rounded-xl p-2 text-sm"
             onClick={handleAddMember}
           >
             افزودن عضو
