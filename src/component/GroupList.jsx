@@ -156,7 +156,20 @@ export default function GroupList() {
     <div>
       {savedGroups.length > 0 && (
         <div className="rounded-xl p-3 text-right">
-          <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
+          <div className="flex justify-between mb-4 justify-between items-center">
+            <div>
+              <button
+                onClick={() => navigate(-1)}
+                className="self-start flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 group mb-4"
+              >
+                <span className="text-lg leading-none">🔙</span>
+                بازگشت
+              </button>
+            </div>
+            <div>
+              <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
+            </div>
+          </div>
 
           <ul className="flex flex-col gap-2 mb-16">
             {savedGroups.map((g) => (
