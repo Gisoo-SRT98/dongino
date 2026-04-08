@@ -154,18 +154,6 @@ export default function GroupList() {
 
   return (
     <div>
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={() => {
-            resetGroup();
-            navigate("/new-group");
-          }}
-          className="bg-orange-500 text-white px-4 py-2 rounded-xl"
-        >
-          ساخت گروه جدید
-        </button>
-      </div>
-
       {savedGroups.length > 0 && (
         <div className="rounded-xl p-3 text-right">
           <h2 className="font-bold pb-3">لیست گروه‌ها</h2>

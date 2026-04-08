@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
-import Button from "./Button";
 import { addGroup, updateGroup } from "../utils/groupsStorage";
 
 export default function MemberLists() {

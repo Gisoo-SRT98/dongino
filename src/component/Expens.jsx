@@ -7,10 +7,10 @@ export default function Expenses() {
   const members = useGroupStore((state) => state.members);
   const splitEqual = useGroupStore((state) => state.splitEqual);
   const setSplitEqual = useGroupStore((state) => state.setSplitEqual);
+  const memberDebts = useGroupStore((state) => state.memberDebts);
   const setMemberDebts = useGroupStore((state) => state.setMemberDebts);
 
-  const [showSplitModal, setShowSplitModal] = useState(false);
-  const [hasAskedSplit, setHasAskedSplit] = useState(false);
+  const [showInitialSplitModal, setShowInitialSplitModal] = useState(false);
   const [isCostConfirmed, setIsCostConfirmed] = useState(false);
   const popupTimeoutRef = useRef(null);
 
@@ -20,18 +20,54 @@ export default function Expenses() {
         clearTimeout(popupTimeoutRef.current);
         popupTimeoutRef.current = null;
       }
-      setShowSplitModal(false);
-      setHasAskedSplit(false);
       setIsCostConfirmed(false);
       setSplitEqual(undefined);
       setMemberDebts([]);
     }
   }, [cost, setSplitEqual, setMemberDebts]);
 
+  useEffect(() => {
+    if (splitEqual === false) {
+      const nextDebts = members.map((_, index) => memberDebts[index] ?? "");
+      const shouldSyncDebts =
+        nextDebts.length !== memberDebts.length ||
+        nextDebts.some((value, index) => value !== memberDebts[index]);
+
+      if (shouldSyncDebts) {
+        setMemberDebts(nextDebts);
+        return;
+      }
+
+      const allDebtsFilled =
+        memberDebts.length === members.length &&
+        memberDebts.every((d) => d !== "" && d !== undefined);
+      if (allDebtsFilled) {
+        const total = memberDebts.reduce((sum, d) => sum + Number(d || 0), 0);
+        if (cost === "" || cost === undefined) {
+          setCost(total);
+        }
+      }
+    }
+  }, [splitEqual, memberDebts, members, cost, setCost]);
+
   function normalizeDigitsToEnglish(raw) {
     return String(raw)
       .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
       .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+  }
+
+  function handleCostFocus() {
+    if (splitEqual === undefined) {
+      setShowInitialSplitModal(true);
+    }
+  }
+
+  function handleInitialSplitChoice(equal) {
+    setSplitEqual(equal);
+    setShowInitialSplitModal(false);
+    if (!equal) {
+      setMemberDebts(members.map(() => ""));
+    }
   }
 
   function handleCostChange(e) {
@@ -52,26 +88,11 @@ export default function Expenses() {
     if (!hasValidMembers || cost === "" || Number(cost) <= 0) return;
 
     setIsCostConfirmed(true);
-    setHasAskedSplit(true);
-
-    if (popupTimeoutRef.current) {
-      clearTimeout(popupTimeoutRef.current);
-    }
-    popupTimeoutRef.current = setTimeout(() => {
-      setShowSplitModal(true);
-      popupTimeoutRef.current = null;
-    }, 1000);
-  }
-
-  function handleSplitChoice(equal) {
-    setSplitEqual(equal);
-    setShowSplitModal(false);
-    setMemberDebts(equal ? [] : members.map(() => ""));
   }
 
   return (
     <>
-      {showSplitModal && (
+      {showInitialSplitModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-right shadow-2xl">
             <p className="text-lg font-semibold mb-4">
@@ -79,13 +100,13 @@ export default function Expenses() {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() => handleSplitChoice(true)}
+                onClick={() => handleInitialSplitChoice(true)}
                 className="w-full rounded-xl bg-green-500 px-4 py-3 text-white transition hover:bg-green-600"
               >
                 بله
               </button>
               <button
-                onClick={() => handleSplitChoice(false)}
+                onClick={() => handleInitialSplitChoice(false)}
                 className="w-full rounded-xl bg-red-500 px-4 py-3 text-white transition hover:bg-red-600"
               >
                 خیر
@@ -107,6 +128,7 @@ export default function Expenses() {
             pattern="[0-9]*"
             value={cost}
             onChange={handleCostChange}
+            onFocus={handleCostFocus}
             placeholder="0"
             className="flex-1 border border-gray-200 rounded-md p-2 text-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
