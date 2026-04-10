@@ -1,46 +1,108 @@
 import { create } from "zustand";
+import {
+  authStore,
+  signIn,
+  signUp,
+  signOut,
+  getCurrentUser,
+} from "../services/pocketbase";
+
+const createUserState = () => {
+  const currentUser = getCurrentUser();
+  return {
+    user: currentUser
+      ? {
+          username: currentUser.username || null,
+          email: currentUser.email || null,
+          loginType: currentUser.username ? "username" : "email",
+        }
+      : null,
+    isLoggedIn: Boolean(currentUser),
+    profileImage: localStorage.getItem("profileImage") || null,
+  };
+};
 
 const useUserStore = create((set) => ({
-  // User authentication state
-  user: null,
-  isLoggedIn: false,
-  profileImage: localStorage.getItem("profileImage") || null,
+  ...createUserState(),
 
-  // Login with username and password
-  loginWithUsername: (username, password) => {
-    if (username && password) {
+  loginWithUsername: async (username, password) => {
+    try {
+      const response = await signIn(username, password);
+      const record = response.record || response;
       set({
-        user: { username, email: null, loginType: "username" },
+        user: {
+          username: record.username || username,
+          email: record.email || null,
+          loginType: "username",
+        },
         isLoggedIn: true,
       });
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ username, email: null, loginType: "username" }),
-      );
       return true;
+    } catch (error) {
+      return false;
     }
-    return false;
   },
 
-  // Login with email
-  loginWithEmail: (email, password) => {
-    if (email && password) {
+  loginWithEmail: async (email, password) => {
+    try {
+      const response = await signIn(email, password);
+      const record = response.record || response;
       set({
-        user: { username: null, email, loginType: "email" },
+        user: {
+          username: record.username || null,
+          email: record.email || email,
+          loginType: "email",
+        },
         isLoggedIn: true,
       });
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ username: null, email, loginType: "email" }),
-      );
       return true;
+    } catch (error) {
+      return false;
     }
-    return false;
   },
 
-  // Update password
+  signupWithUsername: async (username, password) => {
+    try {
+      await signUp({ username, password, passwordConfirm: password });
+      // After signup, login
+      const response = await signIn(username, password);
+      const record = response.record || response;
+      set({
+        user: {
+          username: record.username || username,
+          email: record.email || null,
+          loginType: "username",
+        },
+        isLoggedIn: true,
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  signupWithEmail: async (email, password) => {
+    try {
+      await signUp({ email, password, passwordConfirm: password });
+      // After signup, login
+      const response = await signIn(email, password);
+      const record = response.record || response;
+      set({
+        user: {
+          username: record.username || null,
+          email: record.email || email,
+          loginType: "email",
+        },
+        isLoggedIn: true,
+      });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  },
+
   updatePassword: (oldPassword, newPassword) => {
-    // In a real app, verify oldPassword first
+    // Password update is currently not connected to PocketBase in this UI
     if (oldPassword && newPassword) {
       localStorage.setItem("password", newPassword);
       return true;
@@ -48,28 +110,27 @@ const useUserStore = create((set) => ({
     return false;
   },
 
-  // Update profile image
   updateProfileImage: (imageData) => {
     set({ profileImage: imageData });
     localStorage.setItem("profileImage", imageData);
   },
 
-  // Logout
   logout: () => {
+    signOut();
     set({ user: null, isLoggedIn: false, profileImage: null });
-    localStorage.removeItem("user");
     localStorage.removeItem("profileImage");
   },
 
-  // Load user from localStorage on app start
   loadUser: () => {
-    const savedUser = localStorage.getItem("user");
-    const savedImage = localStorage.getItem("profileImage");
-    if (savedUser) {
+    const currentUser = getCurrentUser();
+    if (currentUser) {
       set({
-        user: JSON.parse(savedUser),
+        user: {
+          username: currentUser.username || null,
+          email: currentUser.email || null,
+          loginType: currentUser.username ? "username" : "email",
+        },
         isLoggedIn: true,
-        profileImage: savedImage,
       });
     }
   },

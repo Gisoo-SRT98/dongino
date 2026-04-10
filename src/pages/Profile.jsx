@@ -5,14 +5,22 @@ import ProfileSection from "../component/ProfileSection";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { isLoggedIn, loginWithUsername, loginWithEmail } = useUserStore();
+  const {
+    isLoggedIn,
+    loginWithUsername,
+    loginWithEmail,
+    signupWithUsername,
+    signupWithEmail,
+  } = useUserStore();
+  const [mode, setMode] = useState("login"); // 'login' or 'signup'
   const [loginType, setLoginType] = useState("username"); // 'username' or 'email'
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setError("");
     let success = false;
 
@@ -21,17 +29,17 @@ export default function ProfilePage() {
         setError("نام کاربری و رمز عبور را وارد کنید");
         return;
       }
-      success = loginWithUsername(username, password);
+      success = await loginWithUsername(username, password);
     } else {
       if (!email || !password) {
         setError("ایمیل و رمز عبور را وارد کنید");
         return;
       }
-      success = loginWithEmail(email, password);
+      success = await loginWithEmail(email, password);
     }
 
     if (!success) {
-      setError("خطا در ورود");
+      setError("خطا در ورود. اطلاعات درست نیست یا کاربر ثبت‌نام نشده است.");
       return;
     }
 
@@ -39,6 +47,44 @@ export default function ProfilePage() {
     setUsername("");
     setEmail("");
     setPassword("");
+  };
+
+  const handleSignup = async () => {
+    setError("");
+    let success = false;
+
+    if (loginType === "username") {
+      if (!username || !password || !confirmPassword) {
+        setError("تمام فیلدها را پر کنید");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("رمز عبور مطابقت ندارد");
+        return;
+      }
+      success = await signupWithUsername(username, password);
+    } else {
+      if (!email || !password || !confirmPassword) {
+        setError("تمام فیلدها را پر کنید");
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError("رمز عبور مطابقت ندارد");
+        return;
+      }
+      success = await signupWithEmail(email, password);
+    }
+
+    if (!success) {
+      setError("خطا در ثبت‌نام. ممکن است نام کاربری یا ایمیل تکراری باشد.");
+      return;
+    }
+
+    // Clear form
+    setUsername("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
   };
 
   return (
@@ -51,13 +97,41 @@ export default function ProfilePage() {
         <span className="font-medium">بازگشت</span>
       </button>
 
-      {/* If not logged in, show login form */}
+      {/* If not logged in, show login/signup form */}
       {!isLoggedIn ? (
         <div className="bg-white p-6 rounded-lg border border-gray-100">
-          <h1 className="text-xl font-bold mb-2 text-center"> ورود</h1>
+          <h1 className="text-xl font-bold mb-2 text-center">
+            {mode === "login" ? "ورود" : "ثبت‌نام"}
+          </h1>
           <p className="text-gray-500 text-sm text-center mb-6">
-            برای دسترسی به پروفایل ابتدا وارد حساب خود شوید
+            {mode === "login"
+              ? "برای دسترسی به پروفایل ابتدا وارد حساب خود شوید"
+              : "حساب جدید بسازید"}
           </p>
+
+          {/* Mode Switcher */}
+          <div className="flex gap-4 mb-6">
+            <button
+              onClick={() => setMode("login")}
+              className={`flex-1 py-3 text-sm rounded-lg transition-all duration-200 ${
+                mode === "login"
+                  ? "bg-orange-500 text-white"
+                  : "border border-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              ورود
+            </button>
+            <button
+              onClick={() => setMode("signup")}
+              className={`flex-1 py-3 rounded-lg transition-all duration-200 ${
+                mode === "signup"
+                  ? "bg-orange-500 text-white"
+                  : "border border-gray-200 text-gray-700 hover:bg-gray-300"
+              }`}
+            >
+              ثبت‌نام
+            </button>
+          </div>
 
           {/* Login Type Selector */}
           <div className="flex gap-4 mb-6">
@@ -65,7 +139,7 @@ export default function ProfilePage() {
               onClick={() => setLoginType("username")}
               className={`flex-1 py-3 text-sm rounded-lg transition-all duration-200 ${
                 loginType === "username"
-                  ? "bg-orange-500 text-white"
+                  ? "bg-blue-500 text-white"
                   : "border border-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
@@ -75,7 +149,7 @@ export default function ProfilePage() {
               onClick={() => setLoginType("email")}
               className={`flex-1 py-3 rounded-lg  transition-all duration-200 ${
                 loginType === "email"
-                  ? "bg-orange-500 text-white"
+                  ? "bg-blue-500 text-white"
                   : "border border-gray-200 text-gray-700 hover:bg-gray-300"
               }`}
             >
@@ -90,7 +164,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Username Login */}
+          {/* Username Login/Signup */}
           {loginType === "username" && (
             <div className="space-y-4 mb-6">
               <div>
@@ -116,14 +190,32 @@ export default function ProfilePage() {
                   className="w-full text-sm px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                   placeholder="رمز عبور را وارد کنید"
                   onKeyPress={(e) => {
-                    if (e.key === "Enter") handleLogin();
+                    if (e.key === "Enter")
+                      mode === "login" ? handleLogin() : handleSignup();
                   }}
                 />
               </div>
+              {mode === "signup" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                    تکرار رمز عبور
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full text-sm px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                    placeholder="رمز عبور را تکرار کنید"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") handleSignup();
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Email Login */}
+          {/* Email Login/Signup */}
           {loginType === "email" && (
             <div className="space-y-4 mb-6">
               <div>
@@ -149,19 +241,37 @@ export default function ProfilePage() {
                   className="w-full text-sm px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
                   placeholder="رمز عبور را وارد کنید"
                   onKeyPress={(e) => {
-                    if (e.key === "Enter") handleLogin();
+                    if (e.key === "Enter")
+                      mode === "login" ? handleLogin() : handleSignup();
                   }}
                 />
               </div>
+              {mode === "signup" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-right">
+                    تکرار رمز عبور
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full text-sm px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-right"
+                    placeholder="رمز عبور را تکرار کنید"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") handleSignup();
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Login Button */}
+          {/* Submit Button */}
           <button
-            onClick={handleLogin}
+            onClick={mode === "login" ? handleLogin : handleSignup}
             className="w-full px-4 py-3 bg-lime-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 font-bold text-sm"
           >
-            ورود
+            {mode === "login" ? "ورود" : "ثبت‌نام"}
           </button>
         </div>
       ) : (

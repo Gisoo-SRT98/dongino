@@ -34,9 +34,16 @@ export function updateGroup(group) {
   const next = groups.map((item) =>
     item?.id === group.id
       ? { ...item, ...group, createdAt: item.createdAt ?? group.createdAt }
-      : item
+      : item,
   );
   saveGroups(next);
   return next;
 }
 
+export function loadMyGroups(userId) {
+  return loadGroups().filter((group) => group.createdBy === userId);
+}
+
+export function findGroupById(groupId) {
+  return loadGroups().find((group) => group.id === groupId) || null;
+}

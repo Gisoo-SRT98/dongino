@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
-import { addGroup, updateGroup } from "../utils/groupsStorage";
+import { createGroup, updateGroup } from "../services/pocketbase";
 
 export default function MemberLists() {
   const groupId = useGroupStore((state) => state.groupId);
@@ -55,7 +55,7 @@ export default function MemberLists() {
       .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
   }
 
-  function handleCreateGroup() {
+  async function handleCreateGroup() {
     if (!groupName.trim()) {
       setShowGroupNameAlert(true);
       return;
@@ -63,19 +63,21 @@ export default function MemberLists() {
     const normalizedMembers = members.map((m) => m.trim()).filter(Boolean);
 
     const groupData = {
-      id: groupId || crypto.randomUUID(),
       name: groupName.trim(),
       cost: Number(cost) || 0,
       members: normalizedMembers,
       splitEqual,
       memberDebts,
-      createdAt: Date.now(),
     };
 
-    if (groupId) {
-      updateGroup(groupData);
-    } else {
-      addGroup(groupData);
+    try {
+      if (groupId) {
+        await updateGroup(groupId, groupData);
+      } else {
+        await createGroup(groupData);
+      }
+    } catch (error) {
+      console.error("خطا در ذخیره گروه در PocketBase:", error);
     }
 
     resetGroup();
@@ -204,14 +206,6 @@ export default function MemberLists() {
             />
           )}
         </ul>
-      </div>
-      <div className="absolute bottom-0 right-0 left-0 h-16 p-2 border-t border-gray-200 bg-white flex justify-around items-center">
-        <button
-          className="w-full bg-orange-500 p-3 rounded-xl text-white"
-          onClick={handleCreateGroup}
-        >
-          ساخت گروه
-        </button>
       </div>
     </>
   );

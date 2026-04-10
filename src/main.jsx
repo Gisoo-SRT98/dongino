@@ -7,6 +7,9 @@ import NewGroupPage from "@/pages/newGroup";
 import ProfilePage from "@/pages/Profile";
 import GroupList from "./component/GroupList";
 import { ThemeProvider } from "./ThemeContext";
+import useUserStore from "./store/useUserStore";
+
+useUserStore.getState().loadUser();
 
 function NotFound() {
   return <h1>404 not found</h1>;

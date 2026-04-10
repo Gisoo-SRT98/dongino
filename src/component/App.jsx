@@ -22,6 +22,12 @@ export default function App() {
           >
             لیست گروه های من
           </button>
+          <button
+            onClick={() => navigate("/profile")}
+            className="px-4 py-2 bg-green-500 text-white rounded-lg"
+          >
+            پروفایل
+          </button>
         </div>
       </main>
       <Footer />

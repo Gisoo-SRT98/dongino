@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
-import { deleteGroup, loadGroups } from "../utils/groupsStorage";
+import { deleteGroup, getGroups } from "../services/pocketbase";
+import Footer from "./Footer";
+import Button from "./Button";
 
 function ConfirmDeleteModal({ open, groupName, onCancel, onConfirm }) {
   if (!open) return null;
@@ -130,12 +132,13 @@ export default function GroupList() {
 
   const [savedGroups, setSavedGroups] = useState([]);
 
-  function refreshGroups() {
-    const groups = loadGroups()
-      .slice()
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-
-    setSavedGroups(groups);
+  async function refreshGroups() {
+    try {
+      const groups = await getGroups();
+      setSavedGroups(groups);
+    } catch (error) {
+      console.error("خطا در بارگذاری گروه‌ها:", error);
+    }
   }
 
   function handleEditGroup(group) {
@@ -154,63 +157,79 @@ export default function GroupList() {
 
   return (
     <div>
-      {savedGroups.length > 0 && (
-        <div className="rounded-xl p-3 text-right">
-          <div className="flex justify-between mb-4 justify-between items-center">
-            <div>
-              <button
-                onClick={() => navigate(-1)}
-                className="self-start flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 group mb-4"
-              >
-                <span className="text-lg leading-none">🔙</span>
-                بازگشت
-              </button>
-            </div>
-            <div>
-              <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
-            </div>
+      <div className="relative w-full max-w-md mx-auto h-screen flex flex-col overflow-hidden flex flex-col gap-4 rounded-xl p-3 text-right">
+        <div className="flex justify-between mb-4 justify-between items-center">
+          <div>
+            <button
+              onClick={() => navigate(-1)}
+              className="self-start flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 group mb-4"
+            >
+              <span className="text-lg leading-none">🔙</span>
+              بازگشت
+            </button>
           </div>
-
-          <ul className="flex flex-col gap-2 mb-16">
-            {savedGroups.map((g) => (
-              <li key={g.id}>
-                <SwipeToRevealDelete
-                  onDelete={() =>
-                    setPendingDeleteGroup({ id: g.id, name: g.name })
-                  }
-                >
-                  <div
-                    className="border rounded-xl p-3 bg-[var(--background)] cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
-                    onClick={() => handleEditGroup(g)}
-                  >
-                    <div className="flex flex-row-reverse justify-between">
-                      <span className="font-bold">{g.name}</span>
-                      <span className="text-sm text-gray-500">
-                        {new Date(g.createdAt).toLocaleDateString("fa-IR")}
-                      </span>
-                    </div>
-
-                    <div className="text-sm text-gray-500">
-                      هزینه: <b>{g.cost}</b> تومان
-                    </div>
-
-                    <div className="text-sm text-gray-500">
-                      اعضا: <b>{g.members?.length || 0}</b>
-                    </div>
-                  </div>
-                </SwipeToRevealDelete>
-              </li>
-            ))}
-          </ul>
+          <div>
+            <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
+          </div>
         </div>
-      )}
+        <div className="overflow-auto flex flex-col gap-2 mb-20">
+          {savedGroups.length > 0 ? (
+            <ul className="flex flex-col gap-2 mb-16">
+              {savedGroups.map((g) => (
+                <li key={g.id}>
+                  <SwipeToRevealDelete
+                    onDelete={() =>
+                      setPendingDeleteGroup({ id: g.id, name: g.name })
+                    }
+                  >
+                    <div
+                      className="border rounded-xl p-3 bg-[var(--background)] cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
+                      onClick={() => handleEditGroup(g)}
+                    >
+                      <div className="flex flex-row-reverse justify-between">
+                        <span className="font-bold">{g.name}</span>
+                        <span className="text-sm text-gray-500">
+                          {new Date(g.createdAt).toLocaleDateString("fa-IR")}
+                        </span>
+                      </div>
+
+                      <div className="text-sm text-gray-500">
+                        هزینه: <b>{g.cost}</b> تومان
+                      </div>
+
+                      <div className="text-sm text-gray-500">
+                        اعضا: <b>{g.members?.length || 0}</b>
+                      </div>
+                    </div>
+                  </SwipeToRevealDelete>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-600">
+              گروهی وجود ندارد. برای ساخت گروه جدید روی دکمه «ساخت گروه جدید»
+              کلیک کنید.
+            </div>
+          )}
+        </div>
+        <div className="absolute bottom-[75px] left-1/2 -translate-x-1/2">
+          <Button onClick={handleAddGroup}>
+            <span className="text-4xl font-medium leading-none">+</span>
+          </Button>
+        </div>
+      </div>
+      <Footer />
 
       <ConfirmDeleteModal
         open={!!pendingDeleteGroup}
         groupName={pendingDeleteGroup?.name}
         onCancel={() => setPendingDeleteGroup(null)}
-        onConfirm={() => {
-          deleteGroup(pendingDeleteGroup.id);
+        onConfirm={async () => {
+          try {
+            await deleteGroup(pendingDeleteGroup.id);
+          } catch (error) {
+            console.error("خطا در حذف گروه از PocketBase:", error);
+          }
           setPendingDeleteGroup(null);
           refreshGroups();
         }}
