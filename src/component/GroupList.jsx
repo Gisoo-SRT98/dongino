@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
 import { deleteGroup, getGroups } from "../services/pocketbase";
-import Footer from "./Footer";
 import Button from "./Button";
+import Default from "../layout/Default";
+import Back from "./Back";
 
 function ConfirmDeleteModal({ open, groupName, onCancel, onConfirm }) {
   if (!open) return null;
@@ -156,18 +157,9 @@ export default function GroupList() {
   const [pendingDeleteGroup, setPendingDeleteGroup] = useState(null);
 
   return (
-    <div>
-      <div className="relative w-full max-w-md mx-auto h-screen flex flex-col overflow-hidden flex flex-col gap-4 rounded-xl p-3 text-right">
+    <Default>
         <div className="flex justify-between mb-4 justify-between items-center">
-          <div>
-            <button
-              onClick={() => navigate(-1)}
-              className="self-start flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 group mb-4"
-            >
-              <span className="text-lg leading-none">🔙</span>
-              بازگشت
-            </button>
-          </div>
+          <Back />
           <div>
             <h2 className="font-bold pb-3">لیست گروه‌ها</h2>
           </div>
@@ -217,8 +209,8 @@ export default function GroupList() {
             <span className="text-4xl font-medium leading-none">+</span>
           </Button>
         </div>
-      </div>
-      <Footer />
+   
+      
 
       <ConfirmDeleteModal
         open={!!pendingDeleteGroup}
@@ -234,6 +226,6 @@ export default function GroupList() {
           refreshGroups();
         }}
       />
-    </div>
+    </Default>
   );
 }

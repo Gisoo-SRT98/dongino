@@ -113,24 +113,6 @@ export default function ProfileSection() {
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-gray-100">
-        <h2 className="text-xl font-bold mb-4 text-right">دسترسی به گروه‌ها</h2>
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => navigate("/new-group")}
-            className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 font-medium"
-          >
-            ساخت گروه جدید
-          </button>
-          <button
-            onClick={() => navigate("/my-groups")}
-            className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-all duration-200 font-medium"
-          >
-            مشاهده لیست گروه‌ها
-          </button>
-        </div>
-      </div>
-
       {/* Change Password Section */}
       <div className="bg-white p-6 rounded-lg border border-gray-100">
         <div className="flex items-center justify-between">

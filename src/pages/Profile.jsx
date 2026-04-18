@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useUserStore from "../store/useUserStore";
 import ProfileSection from "../component/ProfileSection";
+import Back from "../component/Back";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -89,14 +90,7 @@ export default function ProfilePage() {
 
   return (
     <div className="w-full max-w-md mx-auto min-h-screen p-3">
-      <button
-        onClick={() => navigate(-1)}
-        className="flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 mb-6"
-      >
-        <span className="text-lg leading-none">🔙</span>
-        <span className="font-medium">بازگشت</span>
-      </button>
-
+      <Back />
       {/* If not logged in, show login/signup form */}
       {!isLoggedIn ? (
         <div className="bg-white p-6 rounded-lg border border-gray-100">

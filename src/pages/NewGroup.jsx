@@ -5,6 +5,8 @@ import GroupName from "../component/GroupName";
 import MemberLists from "../component/Members";
 import useGroupStore from "../store/useGroupStore";
 import { getGroup, createGroup, updateGroup } from "../services/pocketbase";
+import Default from "../layout/Default";
+import Back from "../component/Back";
 
 export default function NewGroupPage() {
   const { groupName, groupId, cost, members, splitEqual, memberDebts } =
@@ -102,29 +104,21 @@ export default function NewGroupPage() {
   };
 
   return (
-    // <div className="w-full max-w-md mx-auto min-h-screen relative p-2 shadow-xl flex flex-col gap-4">
-    <div className="relative w-full max-w-md mx-auto h-screen flex flex-col overflow-hidden p-2 flex flex-col gap-4">
-      <button
-        onClick={() => navigate(-1)}
-        className="self-start flex flex-row-reverse items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 group"
-      >
-        <span className="text-lg leading-none">🔙</span>
-        <span className="font-medium">بازگشت</span>
-      </button>
-
+    <Default>    
+      <Back />
       {saveError && (
         <div className="p-3 bg-red-100 text-red-800 rounded-lg text-sm text-right border border-red-300">
           {saveError}
         </div>
       )}
 
-      <div className="overflow-auto flex flex-col gap-2 mb-20">
+      <div>
         <GroupName />
         <MemberLists />
         <Expenses />
       </div>
 
-      <div className="absolute bottom-0 right-0 left-0 h-16 p-2 border-t border-gray-200 bg-[var(--background)] flex justify-around items-center">
+      <div className="absolute bottom-0 right-0 left-0 h-16 p-2 border-t border-gray-200 bg-[var(--background)] flex justify-around items-center z-10">
         <button
           onClick={handleSaveGroup}
           disabled={isSaving}
@@ -133,6 +127,6 @@ export default function NewGroupPage() {
           {isSaving ? "در حال ذخیره‌ی گروه..." : "ساخت گروه"}
         </button>
       </div>
-    </div>
+    </Default>
   );
 }

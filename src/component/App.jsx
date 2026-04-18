@@ -1,14 +1,12 @@
 import { useNavigate } from "react-router-dom";
-import Header from "./Header";
-import Footer from "./Footer";
+import Default from "../layout/Default";
 
 export default function App() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-screen flex flex-col overflow-hidden">
-      <Header />
-      <main className="overflow-auto px-2">
+   
+   <Default>
         <div className="flex flex-col gap-2 mb-4">
           <button
             onClick={() => navigate("/new-group")}
@@ -29,8 +27,7 @@ export default function App() {
             پروفایل
           </button>
         </div>
-      </main>
-      <Footer />
-    </div>
+   </Default>
+   
   );
 }
