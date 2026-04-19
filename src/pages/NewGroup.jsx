@@ -112,11 +112,9 @@ export default function NewGroupPage() {
         </div>
       )}
 
-      <div>
-        <GroupName />
-        <MemberLists />
-        <Expenses />
-      </div>
+      <GroupName />
+      <MemberLists />
+      <Expenses />
 
       <div className="absolute bottom-0 right-0 left-0 h-16 p-2 border-t border-gray-200 bg-[var(--background)] flex justify-around items-center z-10">
         <button
@@ -124,7 +122,7 @@ export default function NewGroupPage() {
           disabled={isSaving}
           className="w-full bg-orange-500 p-3 rounded-xl text-white"
         >
-          {isSaving ? "در حال ذخیره‌ی گروه..." : "ساخت گروه"}
+          {isSaving ? "در حال ذخیره‌ی گروه..." : "ذخیره گروه"}
         </button>
       </div>
     </Default>

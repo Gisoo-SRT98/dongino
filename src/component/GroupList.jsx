@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
-import { deleteGroup, getGroups } from "../services/pocketbase";
+import useUserStore from "../store/useUserStore";
+import { deleteGroup, getGroups, getActiveUserId } from "../services/pocketbase";
+import {
+  formatToman,
+  getUserNetBalanceInGroup,
+} from "../utils/groupBalances";
 import Button from "./Button";
 import Default from "../layout/Default";
 import Back from "./Back";
@@ -118,6 +123,7 @@ function SwipeToRevealDelete({ children, onDelete }) {
 }
 
 export default function GroupList() {
+  const user = useUserStore((s) => s.user);
   const resetGroup = useGroupStore((state) => state.resetGroup);
   const setGroupId = useGroupStore((state) => state.setGroupId);
   const setGroupName = useGroupStore((state) => state.setGroupName);
@@ -125,10 +131,9 @@ export default function GroupList() {
   const setMembers = useGroupStore((state) => state.setMembers);
   const navigate = useNavigate();
 
-  const [groupDetails, setGroupDetails] = useState([]);
-
   function handleAddGroup() {
-    setGroupDetails((prev) => [...prev, { name: "", expense: "", image: "" }]);
+    resetGroup();
+    navigate("/new-group");
   }
 
   const [savedGroups, setSavedGroups] = useState([]);
@@ -192,6 +197,33 @@ export default function GroupList() {
                       <div className="text-sm text-gray-500">
                         اعضا: <b>{g.members?.length || 0}</b>
                       </div>
+
+                      {(() => {
+                        const net = getUserNetBalanceInGroup(
+                          g,
+                          getActiveUserId(),
+                          user,
+                        );
+                        if (net > 0) {
+                          return (
+                            <div className="mt-2 text-sm font-semibold text-green-600">
+                              طلبکار: {formatToman(net)} تومان
+                            </div>
+                          );
+                        }
+                        if (net < 0) {
+                          return (
+                            <div className="mt-2 text-sm font-semibold text-red-600">
+                              بدهکار: {formatToman(net)} تومان
+                            </div>
+                          );
+                        }
+                        return (
+                          <div className="mt-2 text-sm text-gray-500">
+                            وضعیت شما در این گروه: تسویه یا نامشخص
+                          </div>
+                        );
+                      })()}
                     </div>
                   </SwipeToRevealDelete>
                 </li>
@@ -205,8 +237,10 @@ export default function GroupList() {
           )}
         </div>
         <div className="absolute bottom-[75px] left-1/2 -translate-x-1/2">
-          <Button onClick={handleAddGroup}>
-            <span className="text-4xl font-medium leading-none">+</span>
+          <Button
+            onClick={handleAddGroup}
+          >
+            +
           </Button>
         </div>
    

@@ -48,7 +48,7 @@ const getLocalUserId = () => {
   }
 };
 
-const getActiveUserId = () => {
+export const getActiveUserId = () => {
   const currentUser = getCurrentUser();
   return currentUser?.id || getLocalUserId();
 };
