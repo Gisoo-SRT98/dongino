@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../LanguageContext";
 
 export default function Footer() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   return (
     <footer className="absolute bottom-0 w-full h-16 border-t border-gray-200 flex justify-around items-center">
       <button
@@ -44,9 +46,12 @@ export default function Footer() {
             </g>
           </g>
         </svg>
-        <p className="text-xs pt-2">خانه</p>
+        <p className="text-xs pt-2">{t("home")}</p>
       </button>
-      <button className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center">
+      <button
+        className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center"
+        onClick={() => navigate("/settings")}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="28px"
@@ -67,7 +72,7 @@ export default function Footer() {
             </g>
           </g>
         </svg>
-        <p className="text-xs pt-2">تنظیمات</p>
+        <p className="text-xs pt-2">{t("settings")}</p>
       </button>
       <button
         className="text-gray-500 hover:text-gray-700 flex items-center flex-col justify-center"
@@ -99,7 +104,7 @@ export default function Footer() {
             </g>
           </g>
         </svg>
-        <p className="text-xs pt-2">پروفایل</p>
+        <p className="text-xs pt-2">{t("profile")}</p>
       </button>
     </footer>
   );

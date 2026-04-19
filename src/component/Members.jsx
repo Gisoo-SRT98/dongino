@@ -156,7 +156,7 @@ export default function MemberLists() {
           </div>
         </div>
       )}
-      <div className="border border-gray-200 rounded-xl p-4">
+      <div className="border border-gray-200 rounded-xl p-4 mb-4">
         <div className="flex justify-between items-center">
           <button
             className="bg-orange-500 rounded-xl p-2 text-sm"

@@ -116,7 +116,7 @@ export default function Expenses() {
         </div>
       )}
 
-      <div className="border border-gray-200 rounded-xl p-4 text-right">
+      <div className="border border-gray-200 rounded-xl p-4 text-right mb-4">
         <label className="font-normal">
           هزینه
           <span className="text-red-500 font-bold"> *</span>

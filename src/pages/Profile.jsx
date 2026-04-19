@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useUserStore from "../store/useUserStore";
 import ProfileSection from "../component/ProfileSection";
+import Default from "../layout/Default";
 import Back from "../component/Back";
 
 export default function ProfilePage() {
@@ -89,7 +90,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto min-h-screen p-3">
+      <Default>
       <Back />
       {/* If not logged in, show login/signup form */}
       {!isLoggedIn ? (
@@ -272,6 +273,6 @@ export default function ProfilePage() {
         /* If logged in, show profile section */
         <ProfileSection />
       )}
-    </div>
+    </Default>
   );
 }

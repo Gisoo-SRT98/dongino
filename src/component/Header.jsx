@@ -1,17 +1,14 @@
 import { useTheme } from "../ThemeContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Header() {
   const { isDark, toggleTheme } = useTheme();
+  const navigate = useNavigate();
 
   return (
-    <header className="bg-[var(--background)] p-4">
-      <HeadProps title="عنوان صفح" icon="" isDark={isDark}>
-        <button
-          onClick={toggleTheme}
-          className="bg-transparent border-none text-xl cursor-pointer p-1 rounded hover:bg-[var(--hover)]"
-        >
-          {isDark ? "☀️" : "🌙"}
-        </button>
+    <header className="bg-[var(--background)] p-4 border-b border-gray-200 mb-4">
+      <HeadProps title="" icon="" isDark={isDark}>
+  
       </HeadProps>
     </header>
   );
