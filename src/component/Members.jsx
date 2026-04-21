@@ -1,25 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
-import { createGroup, updateGroup } from "../services/pocketbase";
 
 export default function MemberLists() {
-  const groupId = useGroupStore((state) => state.groupId);
   const groupName = useGroupStore((state) => state.groupName);
-  const cost = useGroupStore((state) => state.cost);
-  const splitEqual = useGroupStore((state) => state.splitEqual);
   const members = useGroupStore((state) => state.members);
-  const memberDebts = useGroupStore((state) => state.memberDebts);
   const addMember = useGroupStore((state) => state.addMember);
   const removeMember = useGroupStore((state) => state.removeMember);
   const updateMember = useGroupStore((state) => state.updateMember);
-  const updateMemberDebt = useGroupStore((state) => state.updateMemberDebt);
-  const setMemberDebts = useGroupStore((state) => state.setMemberDebts);
-  const resetGroup = useGroupStore((state) => state.resetGroup);
   const [showAddName, setShowAddName] = useState(true);
   const [showGroupNameAlert, setShowGroupNameAlert] = useState(false);
   const alertTimeoutRef = useRef(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (showGroupNameAlert) {
@@ -36,54 +26,6 @@ export default function MemberLists() {
     };
   }, [showGroupNameAlert]);
 
-  useEffect(() => {
-    if (splitEqual === false) {
-      const nextDebts = members.map((_, index) => memberDebts[index] ?? "");
-      const changed =
-        nextDebts.length !== memberDebts.length ||
-        nextDebts.some((value, index) => value !== memberDebts[index]);
-
-      if (changed) setMemberDebts(nextDebts);
-    } else if (splitEqual === true && memberDebts.length > 0) {
-      setMemberDebts([]);
-    }
-  }, [members, splitEqual, memberDebts, setMemberDebts]);
-
-  function normalizeDigitsToEnglish(raw) {
-    return String(raw)
-      .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
-      .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
-  }
-
-  async function handleCreateGroup() {
-    if (!groupName.trim()) {
-      setShowGroupNameAlert(true);
-      return;
-    }
-    const normalizedMembers = members.map((m) => m.trim()).filter(Boolean);
-
-    const groupData = {
-      name: groupName.trim(),
-      cost: Number(cost) || 0,
-      members: normalizedMembers,
-      splitEqual,
-      memberDebts,
-    };
-
-    try {
-      if (groupId) {
-        await updateGroup(groupId, groupData);
-      } else {
-        await createGroup(groupData);
-      }
-    } catch (error) {
-      console.error("خطا در ذخیره گروه در PocketBase:", error);
-    }
-
-    resetGroup();
-    navigate("/");
-  }
-
   function handleAddMember() {
     addMember();
   }
@@ -98,19 +40,6 @@ export default function MemberLists() {
 
   function updateMemberName(index, value) {
     updateMember(index, value);
-  }
-
-  function handleDebtChange(index, rawValue) {
-    const next = normalizeDigitsToEnglish(rawValue).trim();
-    if (next === "") {
-      updateMemberDebt(index, "");
-      return;
-    }
-    const onlyDigits = next.replace(/[^\d]/g, "");
-    updateMemberDebt(
-      index,
-      onlyDigits === "" ? "" : String(Number(onlyDigits)),
-    );
   }
 
   return (
@@ -182,25 +111,11 @@ export default function MemberLists() {
               ),
           )}
         </div>
-        {splitEqual === true && members.length > 0 && (
-          <p className="mb-3 text-sm text-green-700">
-            هزینه به صورت مساوی بین اعضا تقسیم خواهد شد.
-          </p>
-        )}
-        {splitEqual === false && members.length > 0 && (
-          <p className="mb-3 text-sm text-red-700">
-            برای هر عضو مبلغ بدهی را وارد کنید.
-          </p>
-        )}
         <ul>
           {showAddName && (
             <MemberName
               addMembers={members}
               updateMemberName={updateMemberName}
-              splitEqual={splitEqual}
-              cost={cost}
-              memberDebts={memberDebts}
-              onDebtChange={handleDebtChange}
               onAddNewInput={handleAddMember}
               onRemoveMember={handleRemoveMember}
             />
@@ -214,16 +129,9 @@ export default function MemberLists() {
 function MemberName({
   addMembers,
   updateMemberName,
-  splitEqual,
-  cost,
-  memberDebts,
-  onDebtChange,
   onAddNewInput,
   onRemoveMember,
 }) {
-  const equalShare =
-    addMembers.length > 0 ? Math.round(Number(cost) / addMembers.length) : 0;
-
   return (
     <>
       {addMembers.map((member, index) => (
@@ -249,24 +157,6 @@ function MemberName({
             />
             <button className="rounded-md font-bold">{index + 1}</button>
           </div>
-
-          {splitEqual === true && (
-            <div className="text-right text-red-500 font-bold text-sm">
-              مبلغ سهم: {equalShare.toLocaleString()} تومان
-            </div>
-          )}
-
-          {splitEqual === false && (
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={memberDebts[index] ?? ""}
-              onChange={(e) => onDebtChange(index, e.target.value)}
-              placeholder=" مبلغ بدهی این عضو را وارد کنید"
-              className="text-sm border-1 border-red-300 bg-red-50 text-red-700 text-sm w-full max-w-inherit p-2 rounded-xl text-right font-semibold"
-            />
-          )}
         </li>
       ))}
     </>

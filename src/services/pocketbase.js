@@ -1,19 +1,17 @@
-import PocketBase from "pocketbase";
+import pb from "../lib/pocketbase";
 import {
   addGroup as addLocalGroup,
   deleteGroup as deleteLocalGroup,
   loadGroups,
   saveGroups,
 } from "../utils/groupsStorage";
-
-// آدرس سرور PocketBase خود را اینجا وارد کنید.
-// اگر سرور لوکال است:
-// const POCKETBASE_URL = "http://127.0.0.1:8090";
-// اگر سرور روی دامنه/هاست دیگری است، آن را تغییر دهید.
-const POCKETBASE_URL = "http://127.0.0.1:8090";
+import {
+  addExpense as addLocalExpense,
+  deleteExpensesByGroupId,
+  loadMyExpenses,
+} from "../utils/expensesStorage";
 
 const LOCAL_USER_KEY = "dong_local_user_id_v1";
-const pb = new PocketBase(POCKETBASE_URL);
 
 export default pb;
 export const authStore = pb.authStore;
@@ -91,6 +89,30 @@ export const getGroups = async () => {
     }
     return merged;
   } catch (error) {
+    // بعضی PocketBase schema ها فیلد createdBy ندارند و فیلتر 400 می‌دهد.
+    // در این حالت یک بار بدون filter تلاش می‌کنیم.
+    if (error?.status === 400) {
+      try {
+        const records = await pb.collection("groups").getFullList(50, {
+          sort: "-created",
+        });
+        const remoteGroups = records.map(normalizeGroup);
+        const remoteFiltered = remoteGroups.filter(
+          (g) => !g?.createdBy || g.createdBy === currentUser.id,
+        );
+        const merged = [...localGroups];
+        for (const group of remoteFiltered) {
+          if (!merged.some((item) => item.id === group.id)) merged.push(group);
+        }
+        return merged;
+      } catch (error2) {
+        console.warn(
+          "PocketBase getGroups retry failed, falling back to local groups",
+          error2,
+        );
+        return localGroups;
+      }
+    }
     console.warn(
       "PocketBase getGroups failed, falling back to local groups",
       error,
@@ -172,7 +194,9 @@ export const deleteGroup = async (id) => {
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      return await pb.collection("groups").delete(id);
+      const res = await pb.collection("groups").delete(id);
+      deleteExpensesByGroupId(id);
+      return res;
     } catch (error) {
       console.warn(
         "PocketBase deleteGroup failed, falling back to local storage",
@@ -180,5 +204,163 @@ export const deleteGroup = async (id) => {
       );
     }
   }
-  return deleteLocalGroup(id);
+  const res = deleteLocalGroup(id);
+  deleteExpensesByGroupId(id);
+  return res;
+};
+
+export const getUsers = async () => {
+  const records = await pb.collection("users").getFullList(200, {
+    sort: "username",
+  });
+  return records.map((r) => ({
+    id: r.id,
+    username: r.username || "",
+    email: r.email || "",
+  }));
+};
+
+export const createExpense = async ({
+  groupId,
+  amount,
+  paidBy,
+  participants,
+  splits,
+}) => {
+  const normalizedAmount = Number(amount);
+  if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+    throw new Error("مبلغ وارد شده معتبر نیست.");
+  }
+
+  if (!groupId) throw new Error("گروه مشخص نیست.");
+  if (!paidBy) throw new Error("پرداخت‌کننده مشخص نیست.");
+
+  const uniqueParticipants = Array.from(new Set((participants || []).filter(Boolean)));
+  if (uniqueParticipants.length === 0) throw new Error("حداقل یک نفر باید انتخاب شود.");
+
+  const currentUser = getCurrentUser();
+  const createdBy = currentUser?.id || getActiveUserId();
+  const now = new Date().toISOString();
+
+  if (currentUser) {
+    const basePayload = {
+      groupId,
+      amount: normalizedAmount,
+      paidBy,
+      participants: uniqueParticipants,
+      createdBy,
+      createdAt: now,
+    };
+    try {
+      const payloadWithSplits = splits ? { ...basePayload, splits } : basePayload;
+      return await pb.collection("expenses").create(payloadWithSplits);
+    } catch (error) {
+      // اگر schema فیلد splits را نداشت، یک بار بدون آن تلاش می‌کنیم.
+      if (splits && error?.status === 400) {
+        try {
+          return await pb.collection("expenses").create(basePayload);
+        } catch (error2) {
+          console.warn(
+            "PocketBase createExpense retry failed, falling back to local storage",
+            error2,
+          );
+        }
+      }
+      console.warn(
+        "PocketBase createExpense failed, falling back to local storage",
+        error,
+      );
+    }
+  }
+
+  const expense = {
+    id:
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `local-expense-${Date.now()}`,
+    groupId,
+    amount: normalizedAmount,
+    paidBy,
+    participants: uniqueParticipants,
+    splits: splits ?? null,
+    createdBy,
+    createdAt: now,
+  };
+  addLocalExpense(expense);
+  return expense;
+};
+
+const normalizeExpense = (r) => ({
+  id: r.id,
+  groupId: r.groupId || r.group || null,
+  amount: Number(r.amount) || 0,
+  paidBy: r.paidBy || null,
+  participants: Array.isArray(r.participants) ? r.participants : [],
+  splits: r.splits ?? null,
+  createdAt: r.createdAt || r.created || null,
+  createdBy: r.createdBy || r.ownerId || null,
+});
+
+export const getExpenses = async ({ groupId } = {}) => {
+  const currentUser = getCurrentUser();
+  const userId = getActiveUserId();
+  const localExpenses = loadMyExpenses(userId);
+
+  const localFiltered = groupId
+    ? localExpenses.filter((e) => e?.groupId === groupId)
+    : localExpenses;
+
+  if (!currentUser) {
+    return localFiltered.map(normalizeExpense);
+  }
+
+  try {
+    const filterParts = [`createdBy = "${currentUser.id}"`];
+    if (groupId) filterParts.push(`groupId = "${groupId}"`);
+    const filter = filterParts.join(" && ");
+
+    const records = await pb.collection("expenses").getFullList(500, {
+      sort: "-created",
+      filter,
+    });
+    const remoteExpenses = records.map(normalizeExpense);
+    const merged = [...localFiltered];
+    for (const ex of remoteExpenses) {
+      if (!merged.some((item) => item.id === ex.id)) merged.push(ex);
+    }
+    return merged;
+  } catch (error) {
+    // اگر schema فیلد createdBy یا groupId نداشت، فیلتر 400 می‌دهد؛ یک بار بدون filter تلاش می‌کنیم.
+    if (error?.status === 400) {
+      try {
+        const records = await pb.collection("expenses").getFullList(500, {
+          sort: "-created",
+        });
+        let remoteExpenses = records.map(normalizeExpense);
+        remoteExpenses = remoteExpenses.filter(
+          (e) => !e?.createdBy || e.createdBy === currentUser.id,
+        );
+        if (groupId) {
+          remoteExpenses = remoteExpenses.filter((e) => e?.groupId === groupId);
+        }
+
+        const merged = [...localFiltered];
+        for (const ex of remoteExpenses) {
+          if (!merged.some((item) => item.id === ex.id)) merged.push(ex);
+        }
+        return merged;
+      } catch (error2) {
+        console.warn(
+          "PocketBase getExpenses retry failed, falling back to local storage",
+          error2,
+        );
+        return localFiltered.map(normalizeExpense);
+      }
+    }
+    console.warn(
+      "PocketBase getExpenses failed, falling back to local storage",
+      error,
+    );
+    return localFiltered.map(normalizeExpense);
+  }
 };

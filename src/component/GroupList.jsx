@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useGroupStore from "../store/useGroupStore";
 import useUserStore from "../store/useUserStore";
-import { deleteGroup, getGroups, getActiveUserId } from "../services/pocketbase";
+import { deleteGroup, getGroups, getExpenses } from "../services/pocketbase";
 import {
   formatToman,
   getUserNetBalanceInGroup,
@@ -127,7 +127,6 @@ export default function GroupList() {
   const resetGroup = useGroupStore((state) => state.resetGroup);
   const setGroupId = useGroupStore((state) => state.setGroupId);
   const setGroupName = useGroupStore((state) => state.setGroupName);
-  const setCost = useGroupStore((state) => state.setCost);
   const setMembers = useGroupStore((state) => state.setMembers);
   const navigate = useNavigate();
 
@@ -137,20 +136,33 @@ export default function GroupList() {
   }
 
   const [savedGroups, setSavedGroups] = useState([]);
+  const [expensesByGroupId, setExpensesByGroupId] = useState(new Map());
 
   async function refreshGroups() {
     try {
       const groups = await getGroups();
       setSavedGroups(groups);
+      const expenses = await getExpenses();
+      const byGroupId = new Map();
+      for (const ex of expenses || []) {
+        if (!ex?.groupId) continue;
+        const prev = byGroupId.get(ex.groupId) || [];
+        prev.push(ex);
+        byGroupId.set(ex.groupId, prev);
+      }
+      setExpensesByGroupId(byGroupId);
     } catch (error) {
       console.error("خطا در بارگذاری گروه‌ها:", error);
     }
   }
 
+  function handleOpenGroup(group) {
+    navigate(`/group/${group.id}`);
+  }
+
   function handleEditGroup(group) {
     setGroupId(group.id);
     setGroupName(group.name || "");
-    setCost(group.cost ?? "");
     setMembers(group.members || []);
     navigate("/new-group", { state: { editGroupId: group.id } });
   }
@@ -181,7 +193,7 @@ export default function GroupList() {
                   >
                     <div
                       className="border rounded-xl p-3 bg-[var(--background)] cursor-pointer border-gray-200 hover:border-gray-400 transition-colors"
-                      onClick={() => handleEditGroup(g)}
+                      onClick={() => handleOpenGroup(g)}
                     >
                       <div className="flex flex-row-reverse justify-between">
                         <span className="font-bold">{g.name}</span>
@@ -191,19 +203,12 @@ export default function GroupList() {
                       </div>
 
                       <div className="text-sm text-gray-500">
-                        هزینه: <b>{g.cost}</b> تومان
-                      </div>
-
-                      <div className="text-sm text-gray-500">
                         اعضا: <b>{g.members?.length || 0}</b>
                       </div>
 
                       {(() => {
-                        const net = getUserNetBalanceInGroup(
-                          g,
-                          getActiveUserId(),
-                          user,
-                        );
+                        const expenses = expensesByGroupId.get(g.id) || [];
+                        const net = getUserNetBalanceInGroup(g, expenses, user);
                         if (net > 0) {
                           return (
                             <div className="mt-2 text-sm font-semibold text-green-600">
@@ -224,6 +229,18 @@ export default function GroupList() {
                           </div>
                         );
                       })()}
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEditGroup(g);
+                        }}
+                        className="mt-2 text-xs text-blue-600 underline"
+                      >
+                        ویرایش اعضا/نام گروه
+                      </button>
                     </div>
                   </SwipeToRevealDelete>
                 </li>

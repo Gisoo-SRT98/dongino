@@ -1,37 +1,6 @@
-/**
- * سهم هر عضو از هزینهٔ گروه (تومان).
- * فرض: ایجادکنندهٔ گروه کل صورت‌حساب را پرداخت کرده؛ ماندهٔ مثبت یعنی طلبکار، منفی یعنی بدهکار.
- */
-
 function num(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
-}
-
-export function getPerMemberShares(group) {
-  const members = Array.isArray(group?.members) ? group.members : [];
-  const n = members.length;
-  const cost = num(group?.cost);
-  if (n === 0 || cost <= 0) return [];
-
-  const rawDebts = Array.isArray(group?.memberDebts) ? group.memberDebts : [];
-
-  if (rawDebts.length === n && rawDebts.every((d) => d !== "" && d !== undefined)) {
-    return rawDebts.map((d) => num(d));
-  }
-
-  const base = Math.floor(cost / n);
-  let remainder = cost - base * n;
-  const shares = [];
-  for (let i = 0; i < n; i += 1) {
-    let s = base;
-    if (remainder > 0) {
-      s += 1;
-      remainder -= 1;
-    }
-    shares.push(s);
-  }
-  return shares;
 }
 
 function normalizeName(s) {
@@ -39,6 +8,33 @@ function normalizeName(s) {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
+}
+
+function getExpenseSplits(expense) {
+  const raw = expense?.splits;
+  if (!raw) return null;
+
+  if (Array.isArray(raw)) {
+    const out = new Map();
+    for (const item of raw) {
+      const name = item?.name;
+      const amount = num(item?.amount);
+      if (!name) continue;
+      out.set(name, amount);
+    }
+    return out.size ? out : null;
+  }
+
+  if (typeof raw === "object") {
+    const out = new Map();
+    for (const [name, amount] of Object.entries(raw)) {
+      if (!name) continue;
+      out.set(name, num(amount));
+    }
+    return out.size ? out : null;
+  }
+
+  return null;
 }
 
 /**
@@ -72,28 +68,65 @@ export function findMemberIndexForUser(members, user) {
 }
 
 /**
- * مانده برای کاربر فعال: مثبت = طلبکار، منفی = بدهکار، ۰ = خنثی / نامشخص
+ * محاسبه بالانس اعضا بر اساس هزینه‌ها:
+ * - share = amount / participantsCount
+ * - payer: +amount - (isParticipant ? share : 0)
+ * - participant (non-payer): -share
+ * - non-participant: 0
  */
-export function getUserNetBalanceInGroup(group, activeUserId, user) {
-  const cost = num(group?.cost);
-  const payerId = group?.createdBy ?? activeUserId;
-  const isPayer = payerId === activeUserId;
+export function computeBalancesForGroupMembers(members, expenses) {
+  const safeMembers = Array.isArray(members) ? members.filter(Boolean) : [];
+  const balances = new Map();
+  for (const m of safeMembers) balances.set(m, 0);
+
+  for (const ex of expenses || []) {
+    const amount = num(ex?.amount);
+    if (amount <= 0) continue;
+
+    const participants = Array.isArray(ex?.participants)
+      ? ex.participants.filter(Boolean)
+      : [];
+    const count = participants.length;
+    if (count <= 0) continue;
+
+    const splits = getExpenseSplits(ex);
+    if (splits) {
+      for (const p of participants) {
+        const prev = balances.get(p) ?? 0;
+        const part = splits.get(p);
+        balances.set(p, prev - num(part));
+      }
+    } else {
+      const share = amount / count;
+      for (const p of participants) {
+        const prev = balances.get(p) ?? 0;
+        balances.set(p, prev - share);
+      }
+    }
+
+    const payer = ex?.paidBy;
+    if (payer) {
+      const payerPrev = balances.get(payer) ?? 0;
+      const payerIsParticipant = participants.includes(payer);
+      const payerShare = splits ? num(splits.get(payer)) : amount / count;
+      balances.set(
+        payer,
+        payerPrev + amount - (payerIsParticipant ? payerShare : 0),
+      );
+    }
+  }
+
+  return balances;
+}
+
+export function getUserNetBalanceInGroup(group, expenses, user) {
   const members = Array.isArray(group?.members) ? group.members : [];
-  let idx = findMemberIndexForUser(members, user);
+  const idx = findMemberIndexForUser(members, user);
+  if (idx < 0) return 0;
 
-  if (idx < 0 && isPayer && members.length > 0) {
-    idx = 0;
-  }
-
-  const shares = getPerMemberShares(group);
-  const share = idx >= 0 && idx < shares.length ? shares[idx] : 0;
-
-  if (!isPayer && idx < 0) return 0;
-
-  if (isPayer) {
-    return cost - share;
-  }
-  return -share;
+  const balances = computeBalancesForGroupMembers(members, expenses);
+  const memberName = members[idx];
+  return balances.get(memberName) ?? 0;
 }
 
 export function formatToman(n) {
@@ -101,12 +134,13 @@ export function formatToman(n) {
   return v.toLocaleString("fa-IR");
 }
 
-export function summarizeUserAcrossGroups(groups, activeUserId, user) {
+export function summarizeUserAcrossGroups(groups, expensesByGroupId, user) {
   let totalDebt = 0;
   let totalCredit = 0;
 
   for (const g of groups || []) {
-    const net = getUserNetBalanceInGroup(g, activeUserId, user);
+    const expenses = expensesByGroupId?.get?.(g.id) || [];
+    const net = getUserNetBalanceInGroup(g, expenses, user);
     if (net < 0) totalDebt += -net;
     else if (net > 0) totalCredit += net;
   }

@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import Expenses from "../component/Expens";
 import GroupName from "../component/GroupName";
 import MemberLists from "../component/Members";
 import useGroupStore from "../store/useGroupStore";
@@ -9,14 +8,10 @@ import Default from "../layout/Default";
 import Back from "../component/Back";
 
 export default function NewGroupPage() {
-  const { groupName, groupId, cost, members, splitEqual, memberDebts } =
-    useGroupStore();
+  const { groupName, groupId, members } = useGroupStore();
   const setGroupId = useGroupStore((state) => state.setGroupId);
   const setGroupName = useGroupStore((state) => state.setGroupName);
-  const setCost = useGroupStore((state) => state.setCost);
   const setMembers = useGroupStore((state) => state.setMembers);
-  const setSplitEqual = useGroupStore((state) => state.setSplitEqual);
-  const setMemberDebts = useGroupStore((state) => state.setMemberDebts);
   const resetGroup = useGroupStore((state) => state.resetGroup);
   const navigate = useNavigate();
   const location = useLocation();
@@ -34,10 +29,7 @@ export default function NewGroupPage() {
 
         setGroupId(group.id);
         setGroupName(group.name || "");
-        setCost(group.cost ?? "");
         setMembers(group.members || []);
-        setSplitEqual(group.splitEqual);
-        setMemberDebts(group.memberDebts || []);
       } catch (error) {
         console.error("خطا در بارگذاری گروه از PocketBase:", error);
       }
@@ -48,10 +40,7 @@ export default function NewGroupPage() {
     location.state,
     setGroupId,
     setGroupName,
-    setCost,
     setMembers,
-    setSplitEqual,
-    setMemberDebts,
   ]);
 
   const handleSaveGroup = async () => {
@@ -62,12 +51,9 @@ export default function NewGroupPage() {
       setSaveError("نام گروه را وارد کنید");
       return;
     }
-    if (members.length === 0 || members.some((m) => !m.trim())) {
+    const normalizedMembers = (members || []).map((m) => String(m || "").trim()).filter(Boolean);
+    if (normalizedMembers.length === 0) {
       setSaveError("تمام اعضا را وارد کنید");
-      return;
-    }
-    if (cost === "" || Number(cost) <= 0) {
-      setSaveError("هزینه را وارد کنید");
       return;
     }
 
@@ -75,26 +61,21 @@ export default function NewGroupPage() {
     try {
       const groupData = {
         name: groupName.trim(),
-        cost: Number(cost),
-        members,
-        memberDebts:
-          memberDebts.length > 0
-            ? memberDebts.map((d) => Number(d) || 0)
-            : members.map(() => Number(cost) / members.length),
-        splitEqual: splitEqual ?? true,
+        members: normalizedMembers,
       };
 
       if (groupId) {
         // Update existing group
-        await updateGroup(groupId, groupData);
+        const updated = await updateGroup(groupId, groupData);
+        resetGroup();
+        navigate(`/group/${updated.id}`);
       } else {
         // Create new group
-        await createGroup(groupData);
+        const created = await createGroup(groupData);
+        resetGroup();
+        navigate(`/group/${created.id}`);
       }
 
-      // Reset and navigate
-      resetGroup();
-      navigate("/my-groups");
     } catch (error) {
       console.error("خطا در ذخیره‌ی گروه:", error);
       setSaveError("خطا در ذخیره‌ی گروه: " + error.message);
@@ -114,7 +95,6 @@ export default function NewGroupPage() {
 
       <GroupName />
       <MemberLists />
-      <Expenses />
 
       <div className="absolute bottom-0 right-0 left-0 h-16 p-2 border-t border-gray-200 bg-[var(--background)] flex justify-around items-center z-10">
         <button

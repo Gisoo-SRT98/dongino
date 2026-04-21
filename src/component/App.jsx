@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Default from "../layout/Default";
 import { useLanguage } from "../LanguageContext";
 import useUserStore from "../store/useUserStore";
-import { getGroups, getActiveUserId } from "../services/pocketbase";
+import { getExpenses, getGroups } from "../services/pocketbase";
 import {
   formatToman,
   summarizeUserAcrossGroups,
@@ -20,8 +20,15 @@ export default function App() {
     (async () => {
       try {
         const groups = await getGroups();
-        const activeUserId = getActiveUserId();
-        const next = summarizeUserAcrossGroups(groups, activeUserId, user);
+        const expenses = await getExpenses();
+        const byGroupId = new Map();
+        for (const ex of expenses || []) {
+          if (!ex?.groupId) continue;
+          const prev = byGroupId.get(ex.groupId) || [];
+          prev.push(ex);
+          byGroupId.set(ex.groupId, prev);
+        }
+        const next = summarizeUserAcrossGroups(groups, byGroupId, user);
         if (!cancelled) setTotals(next);
       } catch {
         if (!cancelled) setTotals({ totalDebt: 0, totalCredit: 0 });
