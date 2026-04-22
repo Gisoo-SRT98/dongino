@@ -87,7 +87,8 @@ export const getGroups = async () => {
         merged.push(group);
       }
     }
-    return merged;
+    // Sort by createdAt descending
+    return merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   } catch (error) {
     // بعضی PocketBase schema ها فیلد createdBy ندارند و فیلتر 400 می‌دهد.
     // در این حالت یک بار بدون filter تلاش می‌کنیم.
@@ -104,7 +105,8 @@ export const getGroups = async () => {
         for (const group of remoteFiltered) {
           if (!merged.some((item) => item.id === group.id)) merged.push(group);
         }
-        return merged;
+        // Sort by createdAt descending
+        return merged.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       } catch (error2) {
         console.warn(
           "PocketBase getGroups retry failed, falling back to local groups",
@@ -242,9 +244,10 @@ export const createExpense = async ({
   const createdBy = currentUser?.id || getActiveUserId();
   const now = new Date().toISOString();
 
-  if (currentUser) {
+    if (currentUser) {
     const basePayload = {
       groupId,
+      group: groupId, // Support both field names
       amount: normalizedAmount,
       paidBy,
       participants: uniqueParticipants,
@@ -316,7 +319,11 @@ export const getExpenses = async ({ groupId } = {}) => {
 
   try {
     const filterParts = [`createdBy = "${currentUser.id}"`];
-    if (groupId) filterParts.push(`groupId = "${groupId}"`);
+    if (groupId) {
+      // Try filtering by both groupId and group field names using OR if possible, 
+      // but PocketBase usually only has one. We'll use a more flexible filter.
+      filterParts.push(`(groupId = "${groupId}" || group = "${groupId}")`);
+    }
     const filter = filterParts.join(" && ");
 
     const records = await pb.collection("expenses").getFullList(500, {
