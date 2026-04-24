@@ -152,6 +152,7 @@ export default function GroupList() {
       }
       setExpensesByGroupId(byGroupId);
     } catch (error) {
+      if (error?.isAbort) return;
       console.error("خطا در بارگذاری گروه‌ها:", error);
     }
   }
@@ -271,6 +272,7 @@ export default function GroupList() {
           try {
             await deleteGroup(pendingDeleteGroup.id);
           } catch (error) {
+            if (error?.isAbort) return;
             console.error("خطا در حذف گروه از PocketBase:", error);
           }
           setPendingDeleteGroup(null);

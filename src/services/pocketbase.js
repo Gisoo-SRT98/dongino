@@ -17,11 +17,11 @@ export default pb;
 export const authStore = pb.authStore;
 
 export const signIn = async (identity, password) => {
-  return await pb.collection("users").authWithPassword(identity, password);
+  return await pb.collection("users").authWithPassword(identity, password, { requestKey: null });
 };
 
 export const signUp = async (data) => {
-  return await pb.collection("users").create(data);
+  return await pb.collection("users").create(data, { requestKey: null });
 };
 
 export const signOut = () => {
@@ -79,6 +79,7 @@ export const getGroups = async () => {
     const records = await pb.collection("groups").getFullList(50, {
       filter: `createdBy = "${currentUser.id}"`,
       sort: "-created",
+      requestKey: null,
     });
     const remoteGroups = records.map(normalizeGroup);
     const merged = [...localGroups];
@@ -96,6 +97,7 @@ export const getGroups = async () => {
       try {
         const records = await pb.collection("groups").getFullList(50, {
           sort: "-created",
+          requestKey: null,
         });
         const remoteGroups = records.map(normalizeGroup);
         const remoteFiltered = remoteGroups.filter(
@@ -125,9 +127,10 @@ export const getGroups = async () => {
 
 export const getGroup = async (id) => {
   try {
-    const record = await pb.collection("groups").getOne(id);
+    const record = await pb.collection("groups").getOne(id, { requestKey: null });
     return normalizeGroup(record);
   } catch (error) {
+    if (error?.isAbort) return null;
     const groups = loadGroups();
     return groups.find((group) => group.id === id) || null;
   }
@@ -155,9 +158,10 @@ export const createGroup = async (data) => {
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      const record = await pb.collection("groups").create(data);
+      const record = await pb.collection("groups").create(data, { requestKey: null });
       return normalizeGroup(record);
     } catch (error) {
+      if (error?.isAbort) return null;
       console.warn(
         "PocketBase createGroup failed, falling back to local storage",
         error,
@@ -172,9 +176,10 @@ export const updateGroup = async (id, data) => {
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      const record = await pb.collection("groups").update(id, data);
+      const record = await pb.collection("groups").update(id, data, { requestKey: null });
       return normalizeGroup(record);
     } catch (error) {
+      if (error?.isAbort) return null;
       console.warn(
         "PocketBase updateGroup failed, falling back to local storage",
         error,
@@ -196,10 +201,11 @@ export const deleteGroup = async (id) => {
   const currentUser = getCurrentUser();
   if (currentUser) {
     try {
-      const res = await pb.collection("groups").delete(id);
+      const res = await pb.collection("groups").delete(id, { requestKey: null });
       deleteExpensesByGroupId(id);
       return res;
     } catch (error) {
+      if (error?.isAbort) return null;
       console.warn(
         "PocketBase deleteGroup failed, falling back to local storage",
         error,
@@ -214,12 +220,54 @@ export const deleteGroup = async (id) => {
 export const getUsers = async () => {
   const records = await pb.collection("users").getFullList(200, {
     sort: "username",
+    requestKey: null,
   });
   return records.map((r) => ({
     id: r.id,
     username: r.username || "",
     email: r.email || "",
   }));
+};
+
+export const upsertMemberExpense = async ({ group_id, user_id, amount }) => {
+  try {
+    // 1. پیدا کردن رکورد قبلی با نام فیلدهای صحیح (group و paid_by)
+    const existingRecord = await pb
+      .collection("expenses")
+      .getFirstListItem(`group = "${group_id}" && paid_by = "${user_id}"`, {
+        requestKey: null,
+      })
+      .catch(() => null);
+
+    const data = {
+      group: group_id, // نام فیلد در دیتابیس: group
+      paid_by: user_id, // نام فیلد در دیتابیس: paid_by
+      amount: Number(amount), // تبدیل به عدد
+      title: "سهم عضو", // یک مقدار پیش‌فرض برای فیلد title
+    };
+
+    console.log("Upserting expense data to PocketBase:", data);
+
+    if (existingRecord) {
+      // 2. به‌روزرسانی
+      const result = await pb
+        .collection("expenses")
+        .update(existingRecord.id, data, { requestKey: null });
+      console.log(`سهم ${user_id} آپدیت شد.`);
+      return result;
+    } else {
+      // 3. ایجاد رکورد جدید
+      const result = await pb
+        .collection("expenses")
+        .create(data, { requestKey: null });
+      console.log(`سهم جدید برای ${user_id} ساخته شد.`);
+      return result;
+    }
+  } catch (error) {
+    if (error?.isAbort) return null;
+    console.error("خطای واقعی در ذخیره:", error);
+    throw error;
+  }
 };
 
 export const createExpense = async ({
@@ -246,23 +294,25 @@ export const createExpense = async ({
 
     if (currentUser) {
     const basePayload = {
-      groupId,
-      group: groupId, // Support both field names
-      amount: normalizedAmount,
-      paidBy,
+      group: groupId, // استفاده از نام فیلد صحیح
+      paid_by: paidBy, // استفاده از نام فیلد صحیح
+      amount: Number(normalizedAmount), // اطمینان از عددی بودن
       participants: uniqueParticipants,
-      createdBy,
+      title: "هزینه جدید",
       createdAt: now,
     };
+    console.log("Creating expense in PocketBase:", basePayload);
     try {
       const payloadWithSplits = splits ? { ...basePayload, splits } : basePayload;
-      return await pb.collection("expenses").create(payloadWithSplits);
+      return await pb.collection("expenses").create(payloadWithSplits, { requestKey: null });
     } catch (error) {
+      if (error?.isAbort) return null;
       // اگر schema فیلد splits را نداشت، یک بار بدون آن تلاش می‌کنیم.
       if (splits && error?.status === 400) {
         try {
-          return await pb.collection("expenses").create(basePayload);
+          return await pb.collection("expenses").create(basePayload, { requestKey: null });
         } catch (error2) {
+          if (error2?.isAbort) return null;
           console.warn(
             "PocketBase createExpense retry failed, falling back to local storage",
             error2,
@@ -295,9 +345,11 @@ export const createExpense = async ({
 
 const normalizeExpense = (r) => ({
   id: r.id,
-  groupId: r.groupId || r.group || null,
+  groupId: r.group || r.groupId || r.group_id || null,
+  group_id: r.group || r.group_id || r.groupId || null,
+  user_id: r.paid_by || r.user_id || r.userId || null,
   amount: Number(r.amount) || 0,
-  paidBy: r.paidBy || null,
+  paidBy: r.paid_by || r.paidBy || r.user_id || null,
   participants: Array.isArray(r.participants) ? r.participants : [],
   splits: r.splits ?? null,
   createdAt: r.createdAt || r.created || null,
@@ -310,7 +362,9 @@ export const getExpenses = async ({ groupId } = {}) => {
   const localExpenses = loadMyExpenses(userId);
 
   const localFiltered = groupId
-    ? localExpenses.filter((e) => e?.groupId === groupId)
+    ? localExpenses.filter(
+        (e) => e?.groupId === groupId || e?.group_id === groupId || e?.group === groupId,
+      )
     : localExpenses;
 
   if (!currentUser) {
@@ -318,17 +372,16 @@ export const getExpenses = async ({ groupId } = {}) => {
   }
 
   try {
-    const filterParts = [`createdBy = "${currentUser.id}"`];
+    let filter = "";
     if (groupId) {
-      // Try filtering by both groupId and group field names using OR if possible, 
-      // but PocketBase usually only has one. We'll use a more flexible filter.
-      filterParts.push(`(groupId = "${groupId}" || group = "${groupId}")`);
+      // استفاده از فیلتر صحیح بر اساس نام فیلد group
+      filter = `group = "${groupId}"`;
     }
-    const filter = filterParts.join(" && ");
 
     const records = await pb.collection("expenses").getFullList(500, {
       sort: "-created",
       filter,
+      requestKey: null,
     });
     const remoteExpenses = records.map(normalizeExpense);
     const merged = [...localFiltered];
@@ -337,33 +390,7 @@ export const getExpenses = async ({ groupId } = {}) => {
     }
     return merged;
   } catch (error) {
-    // اگر schema فیلد createdBy یا groupId نداشت، فیلتر 400 می‌دهد؛ یک بار بدون filter تلاش می‌کنیم.
-    if (error?.status === 400) {
-      try {
-        const records = await pb.collection("expenses").getFullList(500, {
-          sort: "-created",
-        });
-        let remoteExpenses = records.map(normalizeExpense);
-        remoteExpenses = remoteExpenses.filter(
-          (e) => !e?.createdBy || e.createdBy === currentUser.id,
-        );
-        if (groupId) {
-          remoteExpenses = remoteExpenses.filter((e) => e?.groupId === groupId);
-        }
-
-        const merged = [...localFiltered];
-        for (const ex of remoteExpenses) {
-          if (!merged.some((item) => item.id === ex.id)) merged.push(ex);
-        }
-        return merged;
-      } catch (error2) {
-        console.warn(
-          "PocketBase getExpenses retry failed, falling back to local storage",
-          error2,
-        );
-        return localFiltered.map(normalizeExpense);
-      }
-    }
+    if (error?.isAbort) return localFiltered.map(normalizeExpense);
     console.warn(
       "PocketBase getExpenses failed, falling back to local storage",
       error,

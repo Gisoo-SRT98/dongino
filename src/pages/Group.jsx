@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Default from "../layout/Default";
 import Back from "../component/Back";
@@ -7,6 +7,7 @@ import {
   getExpenses,
   getGroup,
   updateGroup,
+  upsertMemberExpense,
 } from "../services/pocketbase";
 import {
   computeBalancesForGroupMembers,
@@ -105,6 +106,47 @@ export default function GroupPage() {
   const [isManualSplit, setIsManualSplit] = useState(false);
   const [savingExpense, setSavingExpense] = useState(false);
 
+  // Debounce timer refs
+  const groupUpdateTimerRef = useState(null)[0]; // We can use a simpler way with useEffect
+  
+  // Auto-save group name and members with debounce
+  useEffect(() => {
+    if (!group || !groupName) return;
+    if (groupName === group.name) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await updateGroup(group.id, { name: groupName });
+      } catch (e) {
+        if (e?.isAbort) return;
+        console.error("Failed to auto-update group name", e);
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timer);
+  }, [groupName, group?.id]);
+
+  useEffect(() => {
+    if (!group || memberShares.length === 0) return;
+    
+    // Check if members have actually changed
+    const currentMemberNames = memberShares.map(m => m.name);
+    const prevMemberNames = group.members || [];
+    if (JSON.stringify(currentMemberNames) === JSON.stringify(prevMemberNames)) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const updated = await updateGroup(group.id, { members: currentMemberNames });
+        if (updated) setGroup(updated);
+      } catch (e) {
+        if (e?.isAbort) return;
+        console.error("Failed to auto-update member names", e);
+      }
+    }, 1000); // 1 second debounce
+
+    return () => clearTimeout(timer);
+  }, [memberShares, group?.id]);
+
   async function refresh(isInitial = false) {
     if (!id) return;
     setError("");
@@ -119,25 +161,46 @@ export default function GroupPage() {
       }
       setGroup(g);
       setGroupName(g.name || "");
+      
+      // Fetch expenses (which now represent individual member shares in the new logic)
       const ex = await getExpenses({ groupId: id });
       setExpenses(ex);
 
-      // Initialize memberShares from group members if not already set or if it's initial load
+      // Initialize memberShares from group members
       const members = Array.isArray(g.members) ? g.members.filter(Boolean) : [];
+      
+      // Map expenses to member shares if they exist
+      const mappedShares = members.map((m) => {
+        // Find if there's an expense record for this member in the new format (user_id = name)
+        // Note: The user mentioned user_id, which we map to member name for now
+        const memberExpense = ex.find(
+          (e) => (e.user_id === m || e.paidBy === m) && (e.group_id === id || e.groupId === id)
+        );
+        
+        return {
+          name: m,
+          share: memberExpense ? String(memberExpense.amount || "") : "",
+          selected: true,
+        };
+      });
+
       if (isInitial || memberShares.length === 0) {
-        setMemberShares(members.map((m) => ({ name: m, share: "", selected: true })));
+        setMemberShares(mappedShares);
+        
+        // Calculate total amount from shares if we have them
+        const totalFromShares = mappedShares.reduce((sum, m) => sum + (Number(m.share) || 0), 0);
+        if (totalFromShares > 0) {
+          setTotalAmount(String(totalFromShares));
+        }
+
         if (members.length > 0 && !paidBy) setPaidBy(members[0]);
       } else {
-        // Merge existing shares with new members list
-        setMemberShares((prev) => {
-          const next = members.map((m) => {
-            const existing = prev.find((p) => p.name === m);
-            return existing ? existing : { name: m, share: "", selected: true };
-          });
-          return next;
-        });
+        // Merge existing local state with what's in DB if needed, 
+        // but usually we want to respect the DB on refresh
+        setMemberShares(mappedShares);
       }
     } catch (e) {
+      if (e?.isAbort) return;
       setError(e?.message || "خطا در دریافت اطلاعات گروه");
     } finally {
       if (isInitial) setLoading(false);
@@ -191,32 +254,14 @@ export default function GroupPage() {
     return total - Math.floor(totalShares);
   }, [totalAmount, totalShares]);
 
-  const handleUpdateGroupName = async (newName) => {
+  const handleUpdateGroupName = (newName) => {
     setGroupName(newName);
-    if (group) {
-      try {
-        await updateGroup(group.id, { name: newName });
-      } catch (e) {
-        console.error("Failed to update group name", e);
-      }
-    }
   };
 
-  const handleUpdateMemberName = async (index, newName) => {
+  const handleUpdateMemberName = (index, newName) => {
     const nextShares = [...memberShares];
     nextShares[index].name = newName;
     setMemberShares(nextShares);
-
-    // Also update the group members in DB
-    if (group) {
-      const nextMembers = nextShares.map((m) => m.name);
-      try {
-        const updated = await updateGroup(group.id, { members: nextMembers });
-        setGroup(updated);
-      } catch (e) {
-        console.error("Failed to update member name", e);
-      }
-    }
   };
 
   const handleUpdateMemberShare = (index, newShare) => {
@@ -252,6 +297,7 @@ export default function GroupPage() {
     
     if (!id || amountNum <= 0 || selectedMembers.length === 0 || savingExpense) {
       console.log("Validation failed:", { id, amountNum, selectedCount: selectedMembers.length, savingExpense });
+      if (amountNum <= 0) setError("مبلغ کل معتبر نیست.");
       return;
     }
     
@@ -262,34 +308,33 @@ export default function GroupPage() {
     }
 
     setSavingExpense(true);
+    setError("");
     try {
-      const participants = selectedMembers.map((m) => m.name);
-      const splits = {};
-      selectedMembers.forEach((m) => {
-        const shareNum = Number(m.share) || 0;
-        splits[m.name] = shareNum;
-      });
+      console.log("Saving member shares (upsert)...");
+      
+      // Perform upsert for each selected member
+      const promises = selectedMembers.map((m) => 
+        upsertMemberExpense({
+          group_id: id,
+          user_id: m.name,
+          amount: Number(m.share) || 0
+        })
+      );
 
-      console.log("Saving expense with payload:", {
-        groupId: id,
-        amount: amountNum,
-        paidBy: paidBy || participants[0],
-        participants,
-        splits,
-      });
+      await Promise.all(promises);
+      console.log("All shares saved successfully");
 
-      await createExpense({
-        groupId: id,
-        amount: String(amountNum),
-        paidBy: paidBy || participants[0],
-        participants,
-        splits,
-      });
-
-      navigate("/my-groups");
+      // After saving, we refresh the data and show a success message or navigate
+      await refresh();
+      
+      // Optional: Show success and maybe navigate back after a short delay
+      // or just let the user see the updated fields.
+      // navigate("/my-groups");
     } catch (e) {
-      console.error("Error saving expense:", e);
-      setError(e?.message || "خطا در ثبت هزینه");
+      if (e?.isAbort) return;
+      console.error("Error saving expenses:", e);
+      setError(e?.message || "خطا در ثبت سهم‌ها در دیتابیس");
+    } finally {
       setSavingExpense(false);
     }
   };
